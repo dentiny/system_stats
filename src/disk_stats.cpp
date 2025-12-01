@@ -2,6 +2,9 @@
 
 #include "disk_stats.hpp"
 
+#include <cstring>
+#include <regex>
+
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/string_util.hpp"
@@ -9,51 +12,41 @@
 
 #ifdef __linux__
 #include <mntent.h>
-#include <regex.h>
 #include <sys/statvfs.h>
-#include <cstring>
 #elif __APPLE__
 #include <sys/mount.h>
 #include <sys/statvfs.h>
-#include <cstring>
 #endif
 
 namespace duckdb {
 
 namespace {
 
-#ifdef __linux__
 // Regex patterns to ignore virtual filesystem types
-const char *IGNORE_FILE_SYSTEM_TYPE_REGEX =
+constexpr const char *IGNORE_FILE_SYSTEM_TYPE_REGEX =
     "^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|"
     "proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$";
-const char *IGNORE_MOUNT_POINTS_REGEX = "^/(dev|proc|sys|run|snap|var/lib/docker/.+)($|/)";
+constexpr const char *IGNORE_MOUNT_POINTS_REGEX = "^/(dev|proc|sys|run|snap|var/lib/docker/.+)($|/)";
 
 bool IgnoreFileSystemType(const string &fs_type) {
-	regex_t regex;
-	int reg_return = regcomp(&regex, IGNORE_FILE_SYSTEM_TYPE_REGEX, REG_EXTENDED);
-	if (reg_return != 0) {
+	static const std::regex pattern(IGNORE_FILE_SYSTEM_TYPE_REGEX, std::regex_constants::extended);
+	try {
+		return std::regex_match(fs_type, pattern);
+	} catch (const std::regex_error &) {
 		return false;
 	}
-
-	reg_return = regexec(&regex, fs_type.c_str(), 0, NULL, 0);
-	bool ret = (reg_return == 0);
-	regfree(&regex);
-	return ret;
 }
 
 bool IgnoreMountPoint(const string &mount_point) {
-	regex_t regex;
-	int reg_return = regcomp(&regex, IGNORE_MOUNT_POINTS_REGEX, REG_EXTENDED);
-	if (reg_return != 0) {
+	static const std::regex pattern(IGNORE_MOUNT_POINTS_REGEX, std::regex_constants::extended);
+	try {
+		return std::regex_match(mount_point, pattern);
+	} catch (const std::regex_error &) {
 		return false;
 	}
-
-	reg_return = regexec(&regex, mount_point.c_str(), 0, NULL, 0);
-	bool ret = (reg_return == 0);
-	regfree(&regex);
-	return ret;
 }
+
+#ifdef __linux__
 
 std::vector<DiskInfo> GetDiskInfoLinux() {
 	std::vector<DiskInfo> disks;
@@ -120,8 +113,16 @@ std::vector<DiskInfo> GetDiskInfoMacOS() {
 	}
 
 	for (idx_t idx = 0; idx < count; idx++) {
+		string fs_type = mntbuf[idx].f_fstypename;
+		string mount_point = mntbuf[idx].f_mntonname;
+
+		// Skip ignored filesystem types and mount points
+		if (IgnoreFileSystemType(fs_type) || IgnoreMountPoint(mount_point)) {
+			continue;
+		}
+
 		struct statvfs buf;
-		if (statvfs(mntbuf[idx].f_mntonname, &buf) != 0) {
+		if (statvfs(mount_point.c_str(), &buf) != 0) {
 			continue;
 		}
 
@@ -131,9 +132,9 @@ std::vector<DiskInfo> GetDiskInfoMacOS() {
 		}
 
 		DiskInfo info;
-		info.mount_point = mntbuf[idx].f_mntonname;
+		info.mount_point = mount_point;
 		info.file_system = mntbuf[idx].f_mntfromname;
-		info.file_system_type = mntbuf[idx].f_fstypename;
+		info.file_system_type = fs_type;
 		info.total_space = total_space;
 		info.used_space = static_cast<uint64_t>((buf.f_blocks - buf.f_bfree) * buf.f_bsize);
 		info.free_space = static_cast<uint64_t>(buf.f_bavail * buf.f_bsize);
