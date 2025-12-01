@@ -238,19 +238,27 @@ CPUInfo GetCPUInfoMacOS() {
 	size_t uint64_size = sizeof(uint64_val);
 	size_t str_size = sizeof(str_val);
 
-	// Byte order
+	// Byte order - convert numeric value to human-readable string
 	if (sysctlbyname("hw.byteorder", &int_val, &int_size, 0, 0) == 0) {
-		info.byte_order = std::to_string(int_val);
+		// macOS byte order: 1234 = little-endian, 4321 = big-endian
+		if (int_val == 1234) {
+			info.byte_order = "Little Endian";
+		} else if (int_val == 4321) {
+			info.byte_order = "Big Endian";
+		} else {
+			// Fallback to numeric string if unknown value
+			info.byte_order = StringUtil::Format("%d", int_val);
+		}
 	}
 
-	// CPU family
+	// CPU family - keep as numeric string (matches PostgreSQL behavior)
 	if (sysctlbyname("hw.cpufamily", &int_val, &int_size, 0, 0) == 0) {
-		info.cpu_family = std::to_string(int_val);
+		info.cpu_family = StringUtil::Format("%d", int_val);
 	}
 
-	// CPU type
+	// CPU type - keep as numeric string (matches PostgreSQL behavior)
 	if (sysctlbyname("hw.cputype", &int_val, &int_size, 0, 0) == 0) {
-		info.cpu_type = std::to_string(int_val);
+		info.cpu_type = StringUtil::Format("%d", int_val);
 	}
 
 	// Logical CPUs
