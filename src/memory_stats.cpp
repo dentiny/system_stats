@@ -1,3 +1,5 @@
+// TODO(hjiang): Add warning logging for failed system calls.
+
 #include "memory_stats.hpp"
 
 #include "duckdb/common/exception.hpp"
@@ -20,7 +22,7 @@ namespace {
 
 #ifdef __linux__
 // Convert memory value from /proc/meminfo (in kB) to bytes
-uint64_t ConvertToBytes(const string &line) {
+uint64_t ParseBytesValue(const string &line) {
 	std::istringstream iss(line);
 	string key;
 	uint64_t value;
@@ -37,37 +39,40 @@ MemoryInfo GetMemoryInfoLinux() {
 	MemoryInfo info;
 	std::ifstream meminfo("/proc/meminfo");
 	string line;
-	int line_count = 0;
+	int parsed_count = 0;
 
-	while (std::getline(meminfo, line) && line_count < 5) {
+	while (std::getline(meminfo, line) && parsed_count < 5) {
 		// Read total memory
 		if (line.find("MemTotal:") == 0) {
-			info.total_memory = ConvertToBytes(line);
-			line_count++;
+			info.total_memory = ParseBytesValue(line);
+			++parsed_count;
+			continue;
 		}
 		// Read free memory
-		else if (line.find("MemFree:") == 0) {
-			info.free_memory = ConvertToBytes(line);
-			line_count++;
+		if (line.find("MemFree:") == 0) {
+			info.free_memory = ParseBytesValue(line);
+			++parsed_count;
+			continue;
 		}
 		// Read cached memory
-		else if (line.find("Cached:") == 0) {
-			info.cached_memory = ConvertToBytes(line);
-			line_count++;
+		if (line.find("Cached:") == 0) {
+			info.cached_memory = ParseBytesValue(line);
+			++parsed_count;
+			continue;
 		}
 		// Read total swap memory
-		else if (line.find("SwapTotal:") == 0) {
-			info.total_swap = ConvertToBytes(line);
-			line_count++;
+		if (line.find("SwapTotal:") == 0) {
+			info.total_swap = ParseBytesValue(line);
+			++parsed_count;
 		}
 		// Read free swap memory
-		else if (line.find("SwapFree:") == 0) {
-			info.free_swap = ConvertToBytes(line);
-			line_count++;
+		if (line.find("SwapFree:") == 0) {
+			info.free_swap = ParseBytesValue(line);
+			++parsed_count;
+			continue;
 		}
 	}
 
-	// Calculate derived values
 	info.used_memory = info.total_memory - info.free_memory;
 	info.used_swap = info.total_swap - info.free_swap;
 
@@ -83,7 +88,6 @@ MemoryInfo GetMemoryInfoMacOS() {
 	std::array<int, 2> mib = {CTL_HW, HW_MEMSIZE};
 	size_t len = sizeof(info.total_memory);
 	if (sysctl(mib.data(), 2, &info.total_memory, &len, NULL, 0) != 0) {
-		// Error getting total memory
 		return info;
 	}
 
@@ -94,7 +98,6 @@ MemoryInfo GetMemoryInfoMacOS() {
 
 	kern_return_t ret = host_statistics(mport, HOST_VM_INFO, (host_info_t)&vm_stats, &count);
 	if (ret != KERN_SUCCESS) {
-		// Error getting VM statistics
 		return info;
 	}
 

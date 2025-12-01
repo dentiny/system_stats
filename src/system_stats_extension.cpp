@@ -1,11 +1,12 @@
 #define DUCKDB_EXTENSION_MAIN
 
 #include "system_stats_extension.hpp"
-#include "memory_stats.hpp"
+
 #include "duckdb.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "duckdb/parser/parsed_data/create_table_function_info.hpp"
+#include "memory_stats.hpp"
 
 namespace duckdb {
 
