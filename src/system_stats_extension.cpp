@@ -101,12 +101,6 @@ unique_ptr<FunctionData> SysCPUInfoBind(ClientContext &context, TableFunctionBin
 	names.emplace_back("cpu_vendor");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
-	names.emplace_back("cpu_description");
-	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
-
-	names.emplace_back("processor_type");
-	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
-
 	names.emplace_back("architecture");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
@@ -164,14 +158,8 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 	// model_name
 	output.SetValue(col_idx++, 0, Value(info.model_name));
 
-	// cpu_vendor (was vendor_id)
+	// cpu_vendor
 	output.SetValue(col_idx++, 0, Value(info.vendor_id));
-
-	// cpu_description (empty for now - PostgreSQL uses this for additional CPU description)
-	output.SetValue(col_idx++, 0, Value(""));
-
-	// processor_type (empty for now - PostgreSQL uses this for processor type details)
-	output.SetValue(col_idx++, 0, Value(""));
 
 	// architecture
 	output.SetValue(col_idx++, 0, Value(info.architecture));

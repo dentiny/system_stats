@@ -208,16 +208,6 @@ CPUInfo GetCPUInfoLinux() {
 
 		// Store CPU type for ARM (use CPU part identifier)
 		info.cpu_type = std::move(cpu_part);
-
-		// Store processor type (use CPU implementer)
-		if (!cpu_implementer.empty()) {
-			info.processor_type = StringUtil::Format("ARM implementer %s", cpu_implementer);
-		}
-
-		// Store CPU description (use CPU variant if available)
-		if (!cpu_variant.empty()) {
-			info.cpu_description = StringUtil::Format("ARM variant %s", cpu_variant);
-		}
 	}
 
 	return info;
@@ -307,17 +297,6 @@ CPUInfo GetCPUInfoMacOS() {
 	str_size = sizeof(str_val);
 	if (sysctlbyname("hw.machine", str_val, &str_size, 0, 0) == 0) {
 		info.architecture = str_val;
-	}
-
-	// CPU subtype (for processor_type)
-	if (sysctlbyname("hw.cpusubtype", &int_val, &int_size, 0, 0) == 0) {
-		info.processor_type = std::to_string(int_val);
-	}
-
-	// CPU description (use brand string if available)
-	str_size = sizeof(str_val);
-	if (sysctlbyname("machdep.cpu.brand_string", str_val, &str_size, 0, 0) == 0) {
-		info.cpu_description = str_val;
 	}
 
 	// Vendor ID

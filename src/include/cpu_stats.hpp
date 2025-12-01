@@ -10,8 +10,6 @@ struct CPUInfo {
 	string model_name;
 	string architecture;
 	string vendor_id;
-	string cpu_description;
-	string processor_type;
 
 	// Core counts
 	int32_t logical_cpus = 0;
