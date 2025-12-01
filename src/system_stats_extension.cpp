@@ -100,9 +100,6 @@ unique_ptr<FunctionData> SysCPUInfoBind(ClientContext &context, TableFunctionBin
 	names.emplace_back("model_name");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
-	names.emplace_back("cpu_vendor");
-	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
-
 	names.emplace_back("architecture");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
@@ -110,9 +107,6 @@ unique_ptr<FunctionData> SysCPUInfoBind(ClientContext &context, TableFunctionBin
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
 	names.emplace_back("physical_processor");
-	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
-
-	names.emplace_back("num_cores");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
 	names.emplace_back("cpu_clock_speed_Hz");
@@ -129,12 +123,6 @@ unique_ptr<FunctionData> SysCPUInfoBind(ClientContext &context, TableFunctionBin
 
 	names.emplace_back("l3cache_size_KiB");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
-
-	names.emplace_back("cpu_family");
-	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
-
-	names.emplace_back("cpu_type");
-	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
 	names.emplace_back("cpu_byte_order");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
@@ -160,9 +148,6 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 	// model_name
 	output.SetValue(col_idx++, 0, Value(info.model_name));
 
-	// cpu_vendor
-	output.SetValue(col_idx++, 0, Value(info.vendor_id));
-
 	// architecture
 	output.SetValue(col_idx++, 0, Value(info.architecture));
 
@@ -171,9 +156,6 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 
 	// physical_processor
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.physical_cpus));
-
-	// num_cores
-	output.SetValue(col_idx++, 0, Value::INTEGER(info.num_cores));
 
 	// cpu_clock_speed_Hz
 	output.SetValue(col_idx++, 0, Value::UBIGINT(info.cpu_frequency_hz));
@@ -189,12 +171,6 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 
 	// l3cache_size_KiB
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.l3_cache_kb));
-
-	// cpu_family
-	output.SetValue(col_idx++, 0, Value(info.cpu_family));
-
-	// cpu_type
-	output.SetValue(col_idx++, 0, Value(info.cpu_type));
 
 	// cpu_byte_order
 	output.SetValue(col_idx++, 0, Value(info.byte_order));
@@ -238,15 +214,6 @@ unique_ptr<FunctionData> SysDiskInfoBind(ClientContext &context, TableFunctionBi
 	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
 
 	names.emplace_back("free_space");
-	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
-
-	names.emplace_back("total_inodes");
-	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
-
-	names.emplace_back("used_inodes");
-	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
-
-	names.emplace_back("free_inodes");
 	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
 
 	return nullptr;
@@ -294,15 +261,6 @@ void SysDiskInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChu
 
 		// free_space
 		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.free_space));
-
-		// total_inodes
-		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.total_inodes));
-
-		// used_inodes
-		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.used_inodes));
-
-		// free_inodes
-		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.free_inodes));
 
 		data.current_index++;
 		output_count++;
