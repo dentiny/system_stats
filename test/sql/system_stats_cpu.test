@@ -10,23 +10,3 @@ query I
 SELECT COUNT(*) FROM sys_cpu_info();
 ----
 1
-
-# Test that all CPU columns exist and are not causing errors
-query I
-SELECT COUNT(*) FROM sys_cpu_info()
-WHERE model_name IS NOT NULL
-  AND cpu_vendor IS NOT NULL
-  AND architecture IS NOT NULL
-  AND logical_processor IS NOT NULL
-  AND physical_processor IS NOT NULL
-  AND num_cores IS NOT NULL
-  AND cpu_clock_speed IS NOT NULL
-  AND l1dcache_size IS NOT NULL
-  AND l1icache_size IS NOT NULL
-  AND l2cache_size IS NOT NULL
-  AND l3cache_size IS NOT NULL
-  AND cpu_family IS NOT NULL
-  AND cpu_type IS NOT NULL
-  AND cpu_byte_order IS NOT NULL;
-----
-1

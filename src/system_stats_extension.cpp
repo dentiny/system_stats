@@ -115,19 +115,19 @@ unique_ptr<FunctionData> SysCPUInfoBind(ClientContext &context, TableFunctionBin
 	names.emplace_back("num_cores");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
-	names.emplace_back("cpu_clock_speed");
+	names.emplace_back("cpu_clock_speed_Hz");
 	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
 
-	names.emplace_back("l1dcache_size");
+	names.emplace_back("l1dcache_size_KiB");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
-	names.emplace_back("l1icache_size");
+	names.emplace_back("l1icache_size_KiB");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
-	names.emplace_back("l2cache_size");
+	names.emplace_back("l2cache_size_KiB");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
-	names.emplace_back("l3cache_size");
+	names.emplace_back("l3cache_size_KiB");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
 	names.emplace_back("cpu_family");
@@ -175,19 +175,19 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 	// num_cores
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.num_cores));
 
-	// cpu_clock_speed
+	// cpu_clock_speed_Hz
 	output.SetValue(col_idx++, 0, Value::UBIGINT(info.cpu_frequency_hz));
 
-	// l1dcache_size
+	// l1dcache_size_KiB
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.l1d_cache_kb));
 
-	// l1icache_size
+	// l1icache_size_KiB
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.l1i_cache_kb));
 
-	// l2cache_size
+	// l2cache_size_KiB
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.l2_cache_kb));
 
-	// l3cache_size
+	// l3cache_size_KiB
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.l3_cache_kb));
 
 	// cpu_family

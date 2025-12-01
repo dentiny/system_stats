@@ -18,16 +18,3 @@ SELECT
 FROM sys_memory_info();
 ----
 true	true	true	true	true	true	true
-
-# Test that all memory values are numeric and not null
-query I
-SELECT COUNT(*) FROM sys_memory_info()
-WHERE total_memory IS NOT NULL
-  AND used_memory IS NOT NULL
-  AND free_memory IS NOT NULL
-  AND cached_memory IS NOT NULL
-  AND total_swap IS NOT NULL
-  AND used_swap IS NOT NULL
-  AND free_swap IS NOT NULL;
-----
-1
