@@ -198,12 +198,6 @@ unique_ptr<FunctionData> SysDiskInfoBind(ClientContext &context, TableFunctionBi
 	names.emplace_back("file_system");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
-	names.emplace_back("drive_letter");
-	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
-
-	names.emplace_back("drive_type");
-	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
-
 	names.emplace_back("file_system_type");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
@@ -243,12 +237,6 @@ void SysDiskInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChu
 
 		// file_system
 		output.SetValue(col_idx++, output_count, Value(info.file_system));
-
-		// drive_letter (NULL on Linux/macOS)
-		output.SetValue(col_idx++, output_count, Value(info.drive_letter));
-
-		// drive_type (NULL on Linux/macOS)
-		output.SetValue(col_idx++, output_count, Value(info.drive_type));
 
 		// file_system_type
 		output.SetValue(col_idx++, output_count, Value(info.file_system_type));
