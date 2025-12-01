@@ -10,3 +10,9 @@ query I
 SELECT COUNT(*) FROM sys_cpu_info();
 ----
 1
+
+# Test that byte_order is always "Little Endian"
+query I
+SELECT cpu_byte_order FROM sys_cpu_info();
+----
+Little Endian

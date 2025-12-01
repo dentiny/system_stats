@@ -213,6 +213,22 @@ CPUInfo GetCPUInfoLinux() {
 #endif
 
 #ifdef __APPLE__
+// Get system byte order for macOS.
+string GetByteOrderMacOS() {
+	int int_val = 0;
+	size_t int_size = sizeof(int_val);
+
+	if (sysctlbyname("hw.byteorder", &int_val, &int_size, 0, 0) == 0) {
+		// macOS byte order: 1234 = little-endian, 4321 = big-endian
+		if (int_val == 1234) {
+			return "Little Endian";
+		}
+		D_ASSERT(int_val == 4321);
+		return "Big Endian";
+	}
+	return "(Unknown)";
+}
+
 CPUInfo GetCPUInfoMacOS() {
 	CPUInfo info;
 
@@ -239,18 +255,16 @@ CPUInfo GetCPUInfoMacOS() {
 	size_t str_size = sizeof(str_val);
 
 	// Byte order
-	if (sysctlbyname("hw.byteorder", &int_val, &int_size, 0, 0) == 0) {
-		info.byte_order = std::to_string(int_val);
-	}
+	info.byte_order = GetByteOrderMacOS();
 
-	// CPU family
+	// CPU family - keep as numeric string (matches PostgreSQL behavior)
 	if (sysctlbyname("hw.cpufamily", &int_val, &int_size, 0, 0) == 0) {
-		info.cpu_family = std::to_string(int_val);
+		info.cpu_family = StringUtil::Format("%d", int_val);
 	}
 
-	// CPU type
+	// CPU type - keep as numeric string (matches PostgreSQL behavior)
 	if (sysctlbyname("hw.cputype", &int_val, &int_size, 0, 0) == 0) {
-		info.cpu_type = std::to_string(int_val);
+		info.cpu_type = StringUtil::Format("%d", int_val);
 	}
 
 	// Logical CPUs
