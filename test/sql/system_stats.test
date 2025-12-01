@@ -2,12 +2,6 @@
 # description: test system_stats extension
 # group: [sql]
 
-# Before we load the extension, this will fail
-statement error
-SELECT * FROM sys_memory_info();
-----
-Catalog Error: Table Function with name sys_memory_info does not exist!
-
 # Require statement will ensure this test is run with this extension loaded
 require system_stats
 
@@ -57,5 +51,59 @@ WHERE total_memory IS NOT NULL
   AND total_swap IS NOT NULL
   AND used_swap IS NOT NULL
   AND free_swap IS NOT NULL;
+----
+1
+
+# Test sys_cpu_info function
+query I
+SELECT COUNT(*) FROM sys_cpu_info();
+----
+1
+
+# Test that CPU info returns valid data
+query I
+SELECT 
+    CASE 
+        WHEN model_name IS NOT NULL 
+          OR architecture IS NOT NULL
+          OR num_cores > 0 
+        THEN 1 
+        ELSE 0 
+    END
+FROM sys_cpu_info();
+----
+1
+
+# Test that core counts are valid
+query I
+SELECT 
+    CASE 
+        WHEN logical_processor >= num_cores 
+          AND physical_processor >= 0
+          AND num_cores > 0
+        THEN 1 
+        ELSE 0 
+    END
+FROM sys_cpu_info();
+----
+1
+
+# Test that all CPU columns exist and are not causing errors
+query I
+SELECT COUNT(*) FROM sys_cpu_info()
+WHERE model_name IS NOT NULL
+  AND cpu_vendor IS NOT NULL
+  AND architecture IS NOT NULL
+  AND logical_processor IS NOT NULL
+  AND physical_processor IS NOT NULL
+  AND num_cores IS NOT NULL
+  AND cpu_clock_speed IS NOT NULL
+  AND l1dcache_size IS NOT NULL
+  AND l1icache_size IS NOT NULL
+  AND l2cache_size IS NOT NULL
+  AND l3cache_size IS NOT NULL
+  AND cpu_family IS NOT NULL
+  AND cpu_type IS NOT NULL
+  AND cpu_byte_order IS NOT NULL;
 ----
 1

@@ -2,6 +2,7 @@
 
 #include "system_stats_extension.hpp"
 
+#include "cpu_stats.hpp"
 #include "duckdb.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/function/table_function.hpp"
@@ -84,9 +85,130 @@ void SysMemoryInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataC
 	data.finished = true;
 }
 
+// CPU Info Function
+struct SysCPUInfoData : public GlobalTableFunctionState {
+	SysCPUInfoData() : finished(false) {
+	}
+	bool finished;
+};
+
+unique_ptr<FunctionData> SysCPUInfoBind(ClientContext &context, TableFunctionBindInput &input,
+                                        vector<LogicalType> &return_types, vector<string> &names) {
+	// Match PostgreSQL system_stats extension column names
+	names.emplace_back("model_name");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("cpu_vendor");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("architecture");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("logical_processor");
+	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+
+	names.emplace_back("physical_processor");
+	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+
+	names.emplace_back("num_cores");
+	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+
+	names.emplace_back("cpu_clock_speed");
+	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
+
+	names.emplace_back("l1dcache_size");
+	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+
+	names.emplace_back("l1icache_size");
+	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+
+	names.emplace_back("l2cache_size");
+	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+
+	names.emplace_back("l3cache_size");
+	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+
+	names.emplace_back("cpu_family");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("cpu_type");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("cpu_byte_order");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	return nullptr;
+}
+
+unique_ptr<GlobalTableFunctionState> SysCPUInfoInit(ClientContext &context, TableFunctionInitInput &input) {
+	return make_uniq<SysCPUInfoData>();
+}
+
+void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChunk &output) {
+	auto &data = data_p.global_state->Cast<SysCPUInfoData>();
+
+	if (data.finished) {
+		return;
+	}
+
+	CPUInfo info = GetCPUInfo();
+
+	idx_t col_idx = 0;
+
+	// model_name
+	output.SetValue(col_idx++, 0, Value(info.model_name));
+
+	// cpu_vendor
+	output.SetValue(col_idx++, 0, Value(info.vendor_id));
+
+	// architecture
+	output.SetValue(col_idx++, 0, Value(info.architecture));
+
+	// logical_processor
+	output.SetValue(col_idx++, 0, Value::INTEGER(info.logical_cpus));
+
+	// physical_processor
+	output.SetValue(col_idx++, 0, Value::INTEGER(info.physical_cpus));
+
+	// num_cores
+	output.SetValue(col_idx++, 0, Value::INTEGER(info.num_cores));
+
+	// cpu_clock_speed
+	output.SetValue(col_idx++, 0, Value::UBIGINT(info.cpu_frequency_hz));
+
+	// l1dcache_size
+	output.SetValue(col_idx++, 0, Value::INTEGER(info.l1d_cache_kb));
+
+	// l1icache_size
+	output.SetValue(col_idx++, 0, Value::INTEGER(info.l1i_cache_kb));
+
+	// l2cache_size
+	output.SetValue(col_idx++, 0, Value::INTEGER(info.l2_cache_kb));
+
+	// l3cache_size
+	output.SetValue(col_idx++, 0, Value::INTEGER(info.l3_cache_kb));
+
+	// cpu_family
+	output.SetValue(col_idx++, 0, Value(info.cpu_family));
+
+	// cpu_type
+	output.SetValue(col_idx++, 0, Value(info.cpu_type));
+
+	// cpu_byte_order
+	output.SetValue(col_idx++, 0, Value(info.byte_order));
+
+	output.SetCardinality(1);
+	data.finished = true;
+}
+
 void LoadInternal(ExtensionLoader &loader) {
+	// Register sys_memory_info table function
 	TableFunction sys_memory_info_func("sys_memory_info", {}, SysMemoryInfoFunc, SysMemoryInfoBind, SysMemoryInfoInit);
 	loader.RegisterFunction(sys_memory_info_func);
+
+	// Register sys_cpu_info table function
+	TableFunction sys_cpu_info_func("sys_cpu_info", {}, SysCPUInfoFunc, SysCPUInfoBind, SysCPUInfoInit);
+	loader.RegisterFunction(sys_cpu_info_func);
 }
 
 } // namespace
