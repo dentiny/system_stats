@@ -66,7 +66,7 @@ SELECT
     CASE 
         WHEN model_name IS NOT NULL 
           OR architecture IS NOT NULL
-          OR no_of_cores > 0 
+          OR num_cores > 0 
         THEN 1 
         ELSE 0 
     END
@@ -78,9 +78,9 @@ FROM sys_cpu_info();
 query I
 SELECT 
     CASE 
-        WHEN logical_processor >= no_of_cores 
+        WHEN logical_processor >= num_cores 
           AND physical_processor >= 0
-          AND no_of_cores > 0
+          AND num_cores > 0
         THEN 1 
         ELSE 0 
     END
@@ -96,7 +96,7 @@ WHERE model_name IS NOT NULL
   AND architecture IS NOT NULL
   AND logical_processor IS NOT NULL
   AND physical_processor IS NOT NULL
-  AND no_of_cores IS NOT NULL
+  AND num_cores IS NOT NULL
   AND cpu_clock_speed IS NOT NULL
   AND l1dcache_size IS NOT NULL
   AND l1icache_size IS NOT NULL

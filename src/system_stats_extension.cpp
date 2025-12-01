@@ -2,12 +2,12 @@
 
 #include "system_stats_extension.hpp"
 
+#include "cpu_stats.hpp"
 #include "duckdb.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "duckdb/parser/parsed_data/create_table_function_info.hpp"
 #include "memory_stats.hpp"
-#include "cpu_stats.hpp"
 
 namespace duckdb {
 
@@ -110,7 +110,7 @@ unique_ptr<FunctionData> SysCPUInfoBind(ClientContext &context, TableFunctionBin
 	names.emplace_back("physical_processor");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
-	names.emplace_back("no_of_cores");
+	names.emplace_back("num_cores");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
 	names.emplace_back("cpu_clock_speed");
@@ -164,28 +164,28 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 	// architecture
 	output.SetValue(col_idx++, 0, Value(info.architecture));
 
-	// logical_processor (was logical_cpus)
+	// logical_processor
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.logical_cpus));
 
-	// physical_processor (was physical_cpus)
+	// physical_processor
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.physical_cpus));
 
-	// no_of_cores (was num_cores)
+	// num_cores
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.num_cores));
 
-	// cpu_clock_speed (was cpu_frequency_hz)
+	// cpu_clock_speed
 	output.SetValue(col_idx++, 0, Value::UBIGINT(info.cpu_frequency_hz));
 
-	// l1dcache_size (was l1d_cache_kb)
+	// l1dcache_size
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.l1d_cache_kb));
 
-	// l1icache_size (was l1i_cache_kb)
+	// l1icache_size
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.l1i_cache_kb));
 
-	// l2cache_size (was l2_cache_kb)
+	// l2cache_size
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.l2_cache_kb));
 
-	// l3cache_size (was l3_cache_kb)
+	// l3cache_size
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.l3_cache_kb));
 
 	// cpu_family
@@ -194,7 +194,7 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 	// cpu_type
 	output.SetValue(col_idx++, 0, Value(info.cpu_type));
 
-	// cpu_byte_order (was byte_order)
+	// cpu_byte_order
 	output.SetValue(col_idx++, 0, Value(info.byte_order));
 
 	output.SetCardinality(1);
