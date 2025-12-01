@@ -9,14 +9,16 @@
 
 namespace duckdb {
 
+namespace {
+
 struct SysMemoryInfoData : public GlobalTableFunctionState {
 	SysMemoryInfoData() : finished(false) {
 	}
 	bool finished;
 };
 
-static unique_ptr<FunctionData> SysMemoryInfoBind(ClientContext &context, TableFunctionBindInput &input,
-                                                  vector<LogicalType> &return_types, vector<string> &names) {
+unique_ptr<FunctionData> SysMemoryInfoBind(ClientContext &context, TableFunctionBindInput &input,
+                                           vector<LogicalType> &return_types, vector<string> &names) {
 	names.emplace_back("total_memory");
 	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
 
@@ -26,13 +28,7 @@ static unique_ptr<FunctionData> SysMemoryInfoBind(ClientContext &context, TableF
 	names.emplace_back("free_memory");
 	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
 
-	names.emplace_back("available_memory");
-	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
-
 	names.emplace_back("cached_memory");
-	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
-
-	names.emplace_back("buffers_memory");
 	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
 
 	names.emplace_back("total_swap");
@@ -47,11 +43,11 @@ static unique_ptr<FunctionData> SysMemoryInfoBind(ClientContext &context, TableF
 	return nullptr;
 }
 
-static unique_ptr<GlobalTableFunctionState> SysMemoryInfoInit(ClientContext &context, TableFunctionInitInput &input) {
+unique_ptr<GlobalTableFunctionState> SysMemoryInfoInit(ClientContext &context, TableFunctionInitInput &input) {
 	return make_uniq<SysMemoryInfoData>();
 }
 
-static void SysMemoryInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChunk &output) {
+void SysMemoryInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChunk &output) {
 	auto &data = data_p.global_state->Cast<SysMemoryInfoData>();
 
 	if (data.finished) {
@@ -71,14 +67,8 @@ static void SysMemoryInfoFunc(ClientContext &context, TableFunctionInput &data_p
 	// free_memory
 	output.SetValue(col_idx++, 0, Value::UBIGINT(info.free_memory));
 
-	// available_memory
-	output.SetValue(col_idx++, 0, Value::UBIGINT(info.available_memory));
-
 	// cached_memory
 	output.SetValue(col_idx++, 0, Value::UBIGINT(info.cached_memory));
-
-	// buffers_memory
-	output.SetValue(col_idx++, 0, Value::UBIGINT(info.buffers_memory));
 
 	// total_swap
 	output.SetValue(col_idx++, 0, Value::UBIGINT(info.total_swap));
@@ -93,20 +83,22 @@ static void SysMemoryInfoFunc(ClientContext &context, TableFunctionInput &data_p
 	data.finished = true;
 }
 
-static void LoadInternal(ExtensionLoader &loader) {
+void LoadInternal(ExtensionLoader &loader) {
 	TableFunction sys_memory_info_func("sys_memory_info", {}, SysMemoryInfoFunc, SysMemoryInfoBind, SysMemoryInfoInit);
 	loader.RegisterFunction(sys_memory_info_func);
 }
+
+} // namespace
 
 void SystemStatsExtension::Load(ExtensionLoader &loader) {
 	LoadInternal(loader);
 }
 
-std::string SystemStatsExtension::Name() {
+string SystemStatsExtension::Name() {
 	return "system_stats";
 }
 
-std::string SystemStatsExtension::Version() const {
+string SystemStatsExtension::Version() const {
 #ifdef EXT_VERSION_SYSTEM_STATS
 	return EXT_VERSION_SYSTEM_STATS;
 #else
