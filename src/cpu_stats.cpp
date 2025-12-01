@@ -190,8 +190,6 @@ CPUInfo GetCPUInfoLinux() {
 
 	if (processor_count > 0 && info.logical_cpus == 0) {
 		info.logical_cpus = processor_count;
-		// ARM systems typically don't distinguish physical vs logical in /proc/cpuinfo, so we set both to the same
-		// value.
 		info.physical_cpus = processor_count;
 		info.num_cores = processor_count;
 

@@ -101,7 +101,7 @@ std::vector<DiskInfo> GetDiskInfoLinux() {
 		info.free_inodes = static_cast<uint64_t>(buf.f_ffree);
 		info.used_inodes = info.total_inodes - info.free_inodes;
 
-		disks.push_back(info);
+		disks.emplace_back(info);
 	}
 
 	endmntent(fp);
@@ -141,7 +141,7 @@ std::vector<DiskInfo> GetDiskInfoMacOS() {
 		info.free_inodes = static_cast<uint64_t>(buf.f_ffree);
 		info.used_inodes = info.total_inodes - info.free_inodes;
 
-		disks.push_back(info);
+		disks.emplace_back(info);
 	}
 
 	return disks;
