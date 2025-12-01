@@ -106,14 +106,6 @@ CPUInfo GetCPUInfoLinux() {
 		value.erase(0, value.find_first_not_of(" \t"));
 		value.erase(value.find_last_not_of(" \t\n\r") + 1);
 
-		if (key == "vendor_id") {
-			info.vendor_id = value;
-			continue;
-		}
-		if (key == "cpu family") {
-			info.cpu_family = value;
-			continue;
-		}
 		if (key == "model name") {
 			info.model_name = value;
 			continue;
@@ -134,14 +126,6 @@ CPUInfo GetCPUInfoLinux() {
 				} catch (...) {
 					// Ignore parse errors
 				}
-			}
-			continue;
-		}
-		if (key == "cpu cores") {
-			try {
-				info.num_cores = std::stoi(value);
-			} catch (...) {
-				// Ignore parse errors
 			}
 			continue;
 		}
@@ -191,7 +175,6 @@ CPUInfo GetCPUInfoLinux() {
 	if (processor_count > 0 && info.logical_cpus == 0) {
 		info.logical_cpus = processor_count;
 		info.physical_cpus = processor_count;
-		info.num_cores = processor_count;
 
 		// Build a descriptive model name from ARM CPU info
 		if (info.model_name.empty() && !cpu_implementer.empty()) {
@@ -199,13 +182,6 @@ CPUInfo GetCPUInfoLinux() {
 			                                     cpu_implementer, cpu_part, cpu_variant);
 		}
 
-		// Store CPU family for ARM
-		if (!cpu_architecture.empty()) {
-			info.cpu_family = StringUtil::Format("ARMv%s", cpu_architecture);
-		}
-
-		// Store CPU type for ARM (use CPU part identifier)
-		info.cpu_type = std::move(cpu_part);
 	}
 
 	return info;
@@ -244,7 +220,6 @@ CPUInfo GetCPUInfoMacOS() {
 			count = 1;
 		}
 	}
-	info.num_cores = count;
 
 	// Get various CPU properties using sysctlbyname
 	int int_val = 0;
@@ -256,16 +231,6 @@ CPUInfo GetCPUInfoMacOS() {
 
 	// Byte order
 	info.byte_order = GetByteOrderMacOS();
-
-	// CPU family - keep as numeric string (matches PostgreSQL behavior)
-	if (sysctlbyname("hw.cpufamily", &int_val, &int_size, 0, 0) == 0) {
-		info.cpu_family = StringUtil::Format("%d", int_val);
-	}
-
-	// CPU type - keep as numeric string (matches PostgreSQL behavior)
-	if (sysctlbyname("hw.cputype", &int_val, &int_size, 0, 0) == 0) {
-		info.cpu_type = StringUtil::Format("%d", int_val);
-	}
 
 	// Logical CPUs
 	if (sysctlbyname("hw.logicalcpu", &int_val, &int_size, 0, 0) == 0) {
@@ -309,12 +274,6 @@ CPUInfo GetCPUInfoMacOS() {
 	str_size = sizeof(str_val);
 	if (sysctlbyname("hw.machine", str_val, &str_size, 0, 0) == 0) {
 		info.architecture = str_val;
-	}
-
-	// Vendor ID
-	str_size = sizeof(str_val);
-	if (sysctlbyname("machdep.cpu.vendor", str_val, &str_size, 0, 0) == 0) {
-		info.vendor_id = str_val;
 	}
 
 	return info;

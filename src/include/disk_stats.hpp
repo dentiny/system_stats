@@ -15,9 +15,6 @@ struct DiskInfo {
 	uint64_t total_space = 0;
 	uint64_t used_space = 0;
 	uint64_t free_space = 0;
-	uint64_t total_inodes = 0;
-	uint64_t used_inodes = 0;
-	uint64_t free_inodes = 0;
 };
 
 // Get disk information for the current platform

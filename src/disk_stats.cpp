@@ -90,9 +90,6 @@ std::vector<DiskInfo> GetDiskInfoLinux() {
 		info.total_space = total_space;
 		info.used_space = static_cast<uint64_t>((buf.f_blocks - buf.f_bfree) * buf.f_bsize);
 		info.free_space = static_cast<uint64_t>(buf.f_bavail * buf.f_bsize);
-		info.total_inodes = static_cast<uint64_t>(buf.f_files);
-		info.free_inodes = static_cast<uint64_t>(buf.f_ffree);
-		info.used_inodes = info.total_inodes - info.free_inodes;
 
 		disks.emplace_back(info);
 	}
@@ -138,9 +135,6 @@ std::vector<DiskInfo> GetDiskInfoMacOS() {
 		info.total_space = total_space;
 		info.used_space = static_cast<uint64_t>((buf.f_blocks - buf.f_bfree) * buf.f_bsize);
 		info.free_space = static_cast<uint64_t>(buf.f_bavail * buf.f_bsize);
-		info.total_inodes = static_cast<uint64_t>(buf.f_files);
-		info.free_inodes = static_cast<uint64_t>(buf.f_ffree);
-		info.used_inodes = info.total_inodes - info.free_inodes;
 
 		disks.emplace_back(info);
 	}
