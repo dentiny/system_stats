@@ -12,7 +12,7 @@ project(${TARGET_NAME})
 include_directories(src/include)
 
 set(EXTENSION_SOURCES src/system_stats_extension.cpp src/memory_stats.cpp
-                      src/cpu_stats.cpp)
+                      src/cpu_stats.cpp src/disk_stats.cpp)
 
 build_static_extension(${TARGET_NAME} ${EXTENSION_SOURCES})
 build_loadable_extension(${TARGET_NAME} " " ${EXTENSION_SOURCES})
