@@ -47,9 +47,9 @@ int32_t ReadCPUCacheSize(const char *path) {
 	if (std::getline(file, line)) {
 		// Extract numeric part only
 		int32_t value = 0;
-		for (size_t i = 0; i < line.length(); i++) {
-			if (isdigit(line[i])) {
-				value = value * 10 + (line[i] - '0');
+		for (size_t idx = 0; idx < line.length(); idx++) {
+			if (isdigit(line[idx])) {
+				value = value * 10 + (line[idx] - '0');
 			} else {
 				break;
 			}
@@ -190,8 +190,6 @@ CPUInfo GetCPUInfoLinux() {
 
 	if (processor_count > 0 && info.logical_cpus == 0) {
 		info.logical_cpus = processor_count;
-		// ARM systems typically don't distinguish physical vs logical in /proc/cpuinfo, so we set both to the same
-		// value.
 		info.physical_cpus = processor_count;
 		info.num_cores = processor_count;
 

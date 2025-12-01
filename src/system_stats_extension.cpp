@@ -3,8 +3,10 @@
 #include "system_stats_extension.hpp"
 
 #include "cpu_stats.hpp"
+#include "disk_stats.hpp"
 #include "duckdb.hpp"
 #include "duckdb/common/exception.hpp"
+#include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "duckdb/parser/parsed_data/create_table_function_info.hpp"
 #include "memory_stats.hpp"
@@ -201,6 +203,118 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 	data.finished = true;
 }
 
+// Disk Info Function
+struct SysDiskInfoData : public GlobalTableFunctionState {
+	SysDiskInfoData() : finished(false), current_index(0) {
+		disks = GetDiskInfo();
+	}
+	bool finished;
+	size_t current_index;
+	std::vector<DiskInfo> disks;
+};
+
+unique_ptr<FunctionData> SysDiskInfoBind(ClientContext &context, TableFunctionBindInput &input,
+                                         vector<LogicalType> &return_types, vector<string> &names) {
+	// Match PostgreSQL system_stats extension column names
+	names.emplace_back("mount_point");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("file_system");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("drive_letter");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("drive_type");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("file_system_type");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("total_space");
+	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
+
+	names.emplace_back("used_space");
+	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
+
+	names.emplace_back("free_space");
+	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
+
+	names.emplace_back("total_inodes");
+	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
+
+	names.emplace_back("used_inodes");
+	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
+
+	names.emplace_back("free_inodes");
+	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
+
+	return nullptr;
+}
+
+unique_ptr<GlobalTableFunctionState> SysDiskInfoInit(ClientContext &context, TableFunctionInitInput &input) {
+	return make_uniq<SysDiskInfoData>();
+}
+
+void SysDiskInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChunk &output) {
+	auto &data = data_p.global_state->Cast<SysDiskInfoData>();
+
+	if (data.finished) {
+		return;
+	}
+
+	idx_t output_count = 0;
+	idx_t col_idx = 0;
+
+	// Output rows in batches
+	while (data.current_index < data.disks.size() && output_count < STANDARD_VECTOR_SIZE) {
+		const auto &info = data.disks[data.current_index];
+		col_idx = 0;
+
+		// mount_point
+		output.SetValue(col_idx++, output_count, Value(info.mount_point));
+
+		// file_system
+		output.SetValue(col_idx++, output_count, Value(info.file_system));
+
+		// drive_letter (NULL on Linux/macOS)
+		output.SetValue(col_idx++, output_count, Value(info.drive_letter));
+
+		// drive_type (NULL on Linux/macOS)
+		output.SetValue(col_idx++, output_count, Value(info.drive_type));
+
+		// file_system_type
+		output.SetValue(col_idx++, output_count, Value(info.file_system_type));
+
+		// total_space
+		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.total_space));
+
+		// used_space
+		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.used_space));
+
+		// free_space
+		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.free_space));
+
+		// total_inodes
+		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.total_inodes));
+
+		// used_inodes
+		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.used_inodes));
+
+		// free_inodes
+		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.free_inodes));
+
+		data.current_index++;
+		output_count++;
+	}
+
+	if (data.current_index >= data.disks.size()) {
+		data.finished = true;
+	}
+
+	output.SetCardinality(output_count);
+}
+
 void LoadInternal(ExtensionLoader &loader) {
 	// Register sys_memory_info table function
 	TableFunction sys_memory_info_func("sys_memory_info", {}, SysMemoryInfoFunc, SysMemoryInfoBind, SysMemoryInfoInit);
@@ -209,6 +323,10 @@ void LoadInternal(ExtensionLoader &loader) {
 	// Register sys_cpu_info table function
 	TableFunction sys_cpu_info_func("sys_cpu_info", {}, SysCPUInfoFunc, SysCPUInfoBind, SysCPUInfoInit);
 	loader.RegisterFunction(sys_cpu_info_func);
+
+	// Register sys_disk_info table function
+	TableFunction sys_disk_info_func("sys_disk_info", {}, SysDiskInfoFunc, SysDiskInfoBind, SysDiskInfoInit);
+	loader.RegisterFunction(sys_disk_info_func);
 }
 
 } // namespace
