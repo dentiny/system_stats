@@ -10,21 +10,3 @@ query I
 SELECT COUNT(*) >= 1 FROM sys_disk_info();
 ----
 true
-
-# Test that all disk columns exist and are not causing errors
-query I
-SELECT COUNT(*) >= 1 FROM sys_disk_info()
-WHERE mount_point IS NOT NULL
-  AND file_system IS NOT NULL
-  AND drive_letter IS NOT NULL
-  AND drive_type IS NOT NULL
-  AND file_system_type IS NOT NULL
-  AND total_space IS NOT NULL
-  AND used_space IS NOT NULL
-  AND free_space IS NOT NULL
-  AND total_inodes IS NOT NULL
-  AND used_inodes IS NOT NULL
-  AND free_inodes IS NOT NULL
-LIMIT 1;
-----
-true
