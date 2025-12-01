@@ -1,7 +1,10 @@
+// TODO(hjiang): Add system stats for containerized environments.
+
 #include "cpu_stats.hpp"
 
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/string.hpp"
+#include "duckdb/common/string_util.hpp"
 
 #ifdef __linux__
 #include <fstream>
@@ -18,10 +21,22 @@ namespace duckdb {
 namespace {
 
 #ifdef __linux__
+// Get system byte order.
+string GetByteOrder() {
+	union {
+		uint32_t i;
+		char c[4];
+	} test = {0x01020304};
+
+	if (test.c[0] == 1) {
+		return "Big Endian";
+	} else {
+		return "Little Endian";
+	}
+}
+
 // Read CPU cache size from sysfs.
 // Example content: "32K", "256K", etc.
-// Note: In containerized environments (Docker, etc.), cache information
-// may not be available and this will return 0.
 int32_t ReadCPUCacheSize(const char *path) {
 	std::ifstream file(path);
 	if (!file) {
@@ -47,13 +62,15 @@ int32_t ReadCPUCacheSize(const char *path) {
 CPUInfo GetCPUInfoLinux() {
 	CPUInfo info;
 
-	// Get architecture from uname
 	struct utsname uts;
 	if (uname(&uts) == 0) {
 		info.architecture = uts.machine;
 	}
 
-	// Read cache sizes from sysfs (may be unavailable in containers)
+	// Determine byte order
+	info.byte_order = GetByteOrder();
+
+	// Read cache sizes from sysfs.
 	info.l1d_cache_kb = ReadCPUCacheSize("/sys/devices/system/cpu/cpu0/cache/index0/size");
 	info.l1i_cache_kb = ReadCPUCacheSize("/sys/devices/system/cpu/cpu0/cache/index1/size");
 	info.l2_cache_kb = ReadCPUCacheSize("/sys/devices/system/cpu/cpu0/cache/index2/size");
@@ -82,17 +99,13 @@ CPUInfo GetCPUInfoLinux() {
 			continue;
 		}
 
-		// Get key and value parts
 		string key = line.substr(0, colon_pos);
-		// Trim trailing whitespace from key
 		key.erase(key.find_last_not_of(" \t") + 1);
 
 		string value = line.substr(colon_pos + 1);
-		// Trim leading whitespace
 		value.erase(0, value.find_first_not_of(" \t"));
 		value.erase(value.find_last_not_of(" \t\n\r") + 1);
 
-		// x86/x86_64 fields
 		if (key == "vendor_id") {
 			info.vendor_id = value;
 			continue;
@@ -106,7 +119,6 @@ CPUInfo GetCPUInfoLinux() {
 			continue;
 		}
 		if (key == "model" && !model_found) {
-			// Store model number.
 			model_found = true;
 			continue;
 		}
@@ -146,7 +158,6 @@ CPUInfo GetCPUInfoLinux() {
 			continue;
 		}
 
-		// ARM/aarch64 fields
 		if (key == "processor") {
 			processor_count++;
 			continue;
@@ -177,35 +188,35 @@ CPUInfo GetCPUInfoLinux() {
 		}
 	}
 
-	// For ARM systems, set logical_cpus based on processor count
 	if (processor_count > 0 && info.logical_cpus == 0) {
 		info.logical_cpus = processor_count;
-		// ARM systems typically don't distinguish physical vs logical in /proc/cpuinfo
-		// So we set both to the same value
+		// ARM systems typically don't distinguish physical vs logical in /proc/cpuinfo, so we set both to the same
+		// value.
 		info.physical_cpus = processor_count;
 		info.num_cores = processor_count;
 
 		// Build a descriptive model name from ARM CPU info
 		if (info.model_name.empty() && !cpu_implementer.empty()) {
-			std::stringstream ss;
-			ss << "ARM";
-			if (!cpu_architecture.empty()) {
-				ss << " v" << cpu_architecture;
-			}
-			ss << " (impl: " << cpu_implementer;
-			if (!cpu_part.empty()) {
-				ss << ", part: " << cpu_part;
-			}
-			if (!cpu_variant.empty()) {
-				ss << ", variant: " << cpu_variant;
-			}
-			ss << ")";
-			info.model_name = ss.str();
+			info.model_name = StringUtil::Format("ARM v%s (impl: %s, part: %s, variant: %s)", cpu_architecture,
+			                                     cpu_implementer, cpu_part, cpu_variant);
 		}
 
 		// Store CPU family for ARM
 		if (!cpu_architecture.empty()) {
-			info.cpu_family = "ARMv" + cpu_architecture;
+			info.cpu_family = StringUtil::Format("ARMv%s", cpu_architecture);
+		}
+
+		// Store CPU type for ARM (use CPU part identifier)
+		info.cpu_type = std::move(cpu_part);
+
+		// Store processor type (use CPU implementer)
+		if (!cpu_implementer.empty()) {
+			info.processor_type = StringUtil::Format("ARM implementer %s", cpu_implementer);
+		}
+
+		// Store CPU description (use CPU variant if available)
+		if (!cpu_variant.empty()) {
+			info.cpu_description = StringUtil::Format("ARM variant %s", cpu_variant);
 		}
 	}
 
@@ -296,6 +307,23 @@ CPUInfo GetCPUInfoMacOS() {
 	str_size = sizeof(str_val);
 	if (sysctlbyname("hw.machine", str_val, &str_size, 0, 0) == 0) {
 		info.architecture = str_val;
+	}
+
+	// CPU subtype (for processor_type)
+	if (sysctlbyname("hw.cpusubtype", &int_val, &int_size, 0, 0) == 0) {
+		info.processor_type = std::to_string(int_val);
+	}
+
+	// CPU description (use brand string if available)
+	str_size = sizeof(str_val);
+	if (sysctlbyname("machdep.cpu.brand_string", str_val, &str_size, 0, 0) == 0) {
+		info.cpu_description = str_val;
+	}
+
+	// Vendor ID
+	str_size = sizeof(str_val);
+	if (sysctlbyname("machdep.cpu.vendor", str_val, &str_size, 0, 0) == 0) {
+		info.vendor_id = str_val;
 	}
 
 	return info;

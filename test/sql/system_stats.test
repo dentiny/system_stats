@@ -66,7 +66,7 @@ SELECT
     CASE 
         WHEN model_name IS NOT NULL 
           OR architecture IS NOT NULL
-          OR num_cores > 0 
+          OR no_of_cores > 0 
         THEN 1 
         ELSE 0 
     END
