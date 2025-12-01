@@ -213,6 +213,22 @@ CPUInfo GetCPUInfoLinux() {
 #endif
 
 #ifdef __APPLE__
+// Get system byte order for macOS.
+string GetByteOrderMacOS() {
+	int int_val = 0;
+	size_t int_size = sizeof(int_val);
+
+	if (sysctlbyname("hw.byteorder", &int_val, &int_size, 0, 0) == 0) {
+		// macOS byte order: 1234 = little-endian, 4321 = big-endian
+		if (int_val == 1234) {
+			return "Little Endian";
+		}
+		D_ASSERT(int_val == 4321);
+		return "Big Endian";
+	}
+	return "(Unknown)";
+}
+
 CPUInfo GetCPUInfoMacOS() {
 	CPUInfo info;
 
@@ -238,18 +254,8 @@ CPUInfo GetCPUInfoMacOS() {
 	size_t uint64_size = sizeof(uint64_val);
 	size_t str_size = sizeof(str_val);
 
-	// Byte order - convert numeric value to human-readable string
-	if (sysctlbyname("hw.byteorder", &int_val, &int_size, 0, 0) == 0) {
-		// macOS byte order: 1234 = little-endian, 4321 = big-endian
-		if (int_val == 1234) {
-			info.byte_order = "Little Endian";
-		} else if (int_val == 4321) {
-			info.byte_order = "Big Endian";
-		} else {
-			// Fallback to numeric string if unknown value
-			info.byte_order = StringUtil::Format("%d", int_val);
-		}
-	}
+	// Byte order
+	info.byte_order = GetByteOrderMacOS();
 
 	// CPU family - keep as numeric string (matches PostgreSQL behavior)
 	if (sysctlbyname("hw.cpufamily", &int_val, &int_size, 0, 0) == 0) {
