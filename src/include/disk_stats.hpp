@@ -9,8 +9,6 @@ namespace duckdb {
 struct DiskInfo {
 	string mount_point;
 	string file_system;
-	string drive_letter; // NULL on Linux
-	string drive_type;   // NULL on Linux
 	string file_system_type;
 	uint64_t total_space = 0;
 	uint64_t used_space = 0;
