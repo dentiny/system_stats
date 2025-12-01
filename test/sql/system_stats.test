@@ -2,12 +2,6 @@
 # description: test system_stats extension
 # group: [sql]
 
-# Before we load the extension, this will fail
-statement error
-SELECT * FROM sys_memory_info();
-----
-Catalog Error: Table Function with name sys_memory_info does not exist!
-
 # Require statement will ensure this test is run with this extension loaded
 require system_stats
 

@@ -4,7 +4,6 @@
 #include "duckdb/common/string.hpp"
 
 #ifdef __linux__
-#include <cstring>
 #include <fstream>
 #include <sstream>
 #include <sys/utsname.h>
@@ -19,7 +18,10 @@ namespace duckdb {
 namespace {
 
 #ifdef __linux__
-// Read CPU cache size from sysfs (format: "32K", "256K", etc.)
+// Read CPU cache size from sysfs.
+// Example content: "32K", "256K", etc.
+// Note: In containerized environments (Docker, etc.), cache information
+// may not be available and this will return 0.
 int32_t ReadCPUCacheSize(const char *path) {
 	std::ifstream file(path);
 	if (!file) {
@@ -51,7 +53,7 @@ CPUInfo GetCPUInfoLinux() {
 		info.architecture = uts.machine;
 	}
 
-	// Read cache sizes
+	// Read cache sizes from sysfs (may be unavailable in containers)
 	info.l1d_cache_kb = ReadCPUCacheSize("/sys/devices/system/cpu/cpu0/cache/index0/size");
 	info.l1i_cache_kb = ReadCPUCacheSize("/sys/devices/system/cpu/cpu0/cache/index1/size");
 	info.l2_cache_kb = ReadCPUCacheSize("/sys/devices/system/cpu/cpu0/cache/index2/size");
@@ -65,33 +67,52 @@ CPUInfo GetCPUInfoLinux() {
 
 	string line;
 	bool model_found = false;
+	int processor_count = 0;
+
+	// ARM-specific fields
+	string cpu_implementer;
+	string cpu_architecture;
+	string cpu_variant;
+	string cpu_part;
 
 	while (std::getline(cpuinfo, line)) {
 		// Look for colon separator
-		const char *colon = strchr(line.c_str(), ':');
-		if (!colon) {
+		size_t colon_pos = line.find(':');
+		if (colon_pos == string::npos) {
 			continue;
 		}
 
-		// Get value part (after colon)
-		string value = colon + 1;
+		// Get key and value parts
+		string key = line.substr(0, colon_pos);
+		// Trim trailing whitespace from key
+		key.erase(key.find_last_not_of(" \t") + 1);
+
+		string value = line.substr(colon_pos + 1);
 		// Trim leading whitespace
 		value.erase(0, value.find_first_not_of(" \t"));
 		value.erase(value.find_last_not_of(" \t\n\r") + 1);
 
-		// Match keys using strstr (matching PostgreSQL approach)
-		if (strstr(line.c_str(), "vendor_id") == line.c_str()) {
+		// x86/x86_64 fields
+		if (key == "vendor_id") {
 			info.vendor_id = value;
-		} else if (strstr(line.c_str(), "cpu family") == line.c_str()) {
+			continue;
+		}
+		if (key == "cpu family") {
 			info.cpu_family = value;
-		} else if (strstr(line.c_str(), "model name") == line.c_str()) {
+			continue;
+		}
+		if (key == "model name") {
 			info.model_name = value;
-		} else if (strstr(line.c_str(), "model") == line.c_str() && !model_found) {
-			// Store model number (not model_name)
+			continue;
+		}
+		if (key == "model" && !model_found) {
+			// Store model number.
 			model_found = true;
-		} else if (strstr(line.c_str(), "cpu MHz") == line.c_str()) {
-			// Each "cpu MHz" line represents a physical processor
-			info.physical_cpus++;
+			continue;
+		}
+		if (key == "cpu MHz") {
+			// Each "cpu MHz" line represents a logical processor
+			info.logical_cpus++;
 
 			// Store CPU frequency from first entry (convert MHz to Hz)
 			if (info.cpu_frequency_hz == 0) {
@@ -102,12 +123,89 @@ CPUInfo GetCPUInfoLinux() {
 					// Ignore parse errors
 				}
 			}
-		} else if (strstr(line.c_str(), "cpu cores") == line.c_str()) {
+			continue;
+		}
+		if (key == "cpu cores") {
 			try {
 				info.num_cores = std::stoi(value);
 			} catch (...) {
 				// Ignore parse errors
 			}
+			continue;
+		}
+		if (key == "physical id") {
+			// Count unique physical processors
+			try {
+				int phys_id = std::stoi(value);
+				if (phys_id + 1 > info.physical_cpus) {
+					info.physical_cpus = phys_id + 1;
+				}
+			} catch (...) {
+				// Ignore parse errors
+			}
+			continue;
+		}
+
+		// ARM/aarch64 fields
+		if (key == "processor") {
+			processor_count++;
+			continue;
+		}
+		if (key == "CPU implementer") {
+			if (cpu_implementer.empty()) {
+				cpu_implementer = value;
+			}
+			continue;
+		}
+		if (key == "CPU architecture") {
+			if (cpu_architecture.empty()) {
+				cpu_architecture = value;
+			}
+			continue;
+		}
+		if (key == "CPU variant") {
+			if (cpu_variant.empty()) {
+				cpu_variant = value;
+			}
+			continue;
+		}
+		if (key == "CPU part") {
+			if (cpu_part.empty()) {
+				cpu_part = value;
+			}
+			continue;
+		}
+	}
+
+	// For ARM systems, set logical_cpus based on processor count
+	if (processor_count > 0 && info.logical_cpus == 0) {
+		info.logical_cpus = processor_count;
+		// ARM systems typically don't distinguish physical vs logical in /proc/cpuinfo
+		// So we set both to the same value
+		info.physical_cpus = processor_count;
+		info.num_cores = processor_count;
+
+		// Build a descriptive model name from ARM CPU info
+		if (info.model_name.empty() && !cpu_implementer.empty()) {
+			std::stringstream ss;
+			ss << "ARM";
+			if (!cpu_architecture.empty()) {
+				ss << " v" << cpu_architecture;
+			}
+			ss << " (impl: " << cpu_implementer;
+			if (!cpu_part.empty()) {
+				ss << ", part: " << cpu_part;
+			}
+			if (!cpu_variant.empty()) {
+				ss << ", variant: " << cpu_variant;
+			}
+			ss << ")";
+			info.model_name = ss.str();
+		}
+
+		// Store CPU family for ARM
+		if (!cpu_architecture.empty()) {
+			info.cpu_family = "ARMv" + cpu_architecture;
 		}
 	}
 
@@ -134,12 +232,12 @@ CPUInfo GetCPUInfoMacOS() {
 	info.num_cores = count;
 
 	// Get various CPU properties using sysctlbyname
-	int int_val;
-	uint64_t uint64_val;
-	char str_val[256];
+	int int_val = 0;
+	uint64_t uint64_val = 0;
+	char str_val[256] = {0};
 	size_t int_size = sizeof(int_val);
 	size_t uint64_size = sizeof(uint64_val);
-	size_t str_size;
+	size_t str_size = sizeof(str_val);
 
 	// Byte order
 	if (sysctlbyname("hw.byteorder", &int_val, &int_size, 0, 0) == 0) {

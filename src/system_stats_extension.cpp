@@ -7,6 +7,7 @@
 #include "duckdb/function/table_function.hpp"
 #include "duckdb/parser/parsed_data/create_table_function_info.hpp"
 #include "memory_stats.hpp"
+#include "cpu_stats.hpp"
 
 namespace duckdb {
 
@@ -93,37 +94,44 @@ struct SysCPUInfoData : public GlobalTableFunctionState {
 
 unique_ptr<FunctionData> SysCPUInfoBind(ClientContext &context, TableFunctionBindInput &input,
                                         vector<LogicalType> &return_types, vector<string> &names) {
+	// Match PostgreSQL system_stats extension column names
 	names.emplace_back("model_name");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("cpu_vendor");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("cpu_description");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("processor_type");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
 	names.emplace_back("architecture");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
-	names.emplace_back("vendor_id");
-	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
-
-	names.emplace_back("logical_cpus");
+	names.emplace_back("logical_processor");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
-	names.emplace_back("physical_cpus");
+	names.emplace_back("physical_processor");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
-	names.emplace_back("num_cores");
+	names.emplace_back("no_of_cores");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
-	names.emplace_back("cpu_frequency_hz");
+	names.emplace_back("cpu_clock_speed");
 	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
 
-	names.emplace_back("l1d_cache_kb");
+	names.emplace_back("l1dcache_size");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
-	names.emplace_back("l1i_cache_kb");
+	names.emplace_back("l1icache_size");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
-	names.emplace_back("l2_cache_kb");
+	names.emplace_back("l2cache_size");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
-	names.emplace_back("l3_cache_kb");
+	names.emplace_back("l3cache_size");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
 	names.emplace_back("cpu_family");
@@ -132,7 +140,7 @@ unique_ptr<FunctionData> SysCPUInfoBind(ClientContext &context, TableFunctionBin
 	names.emplace_back("cpu_type");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
-	names.emplace_back("byte_order");
+	names.emplace_back("cpu_byte_order");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
 	return nullptr;
@@ -156,34 +164,40 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 	// model_name
 	output.SetValue(col_idx++, 0, Value(info.model_name));
 
+	// cpu_vendor (was vendor_id)
+	output.SetValue(col_idx++, 0, Value(info.vendor_id));
+
+	// cpu_description (empty for now - PostgreSQL uses this for additional CPU description)
+	output.SetValue(col_idx++, 0, Value(""));
+
+	// processor_type (empty for now - PostgreSQL uses this for processor type details)
+	output.SetValue(col_idx++, 0, Value(""));
+
 	// architecture
 	output.SetValue(col_idx++, 0, Value(info.architecture));
 
-	// vendor_id
-	output.SetValue(col_idx++, 0, Value(info.vendor_id));
-
-	// logical_cpus
+	// logical_processor (was logical_cpus)
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.logical_cpus));
 
-	// physical_cpus
+	// physical_processor (was physical_cpus)
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.physical_cpus));
 
-	// num_cores
+	// no_of_cores (was num_cores)
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.num_cores));
 
-	// cpu_frequency_hz
+	// cpu_clock_speed (was cpu_frequency_hz)
 	output.SetValue(col_idx++, 0, Value::UBIGINT(info.cpu_frequency_hz));
 
-	// l1d_cache_kb
+	// l1dcache_size (was l1d_cache_kb)
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.l1d_cache_kb));
 
-	// l1i_cache_kb
+	// l1icache_size (was l1i_cache_kb)
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.l1i_cache_kb));
 
-	// l2_cache_kb
+	// l2cache_size (was l2_cache_kb)
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.l2_cache_kb));
 
-	// l3_cache_kb
+	// l3cache_size (was l3_cache_kb)
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.l3_cache_kb));
 
 	// cpu_family
@@ -192,7 +206,7 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 	// cpu_type
 	output.SetValue(col_idx++, 0, Value(info.cpu_type));
 
-	// byte_order
+	// cpu_byte_order (was byte_order)
 	output.SetValue(col_idx++, 0, Value(info.byte_order));
 
 	output.SetCardinality(1);
