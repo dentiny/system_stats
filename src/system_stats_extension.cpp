@@ -84,9 +84,129 @@ void SysMemoryInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataC
 	data.finished = true;
 }
 
+// CPU Info Function
+struct SysCPUInfoData : public GlobalTableFunctionState {
+	SysCPUInfoData() : finished(false) {
+	}
+	bool finished;
+};
+
+unique_ptr<FunctionData> SysCPUInfoBind(ClientContext &context, TableFunctionBindInput &input,
+                                        vector<LogicalType> &return_types, vector<string> &names) {
+	names.emplace_back("model_name");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("architecture");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("vendor_id");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("logical_cpus");
+	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+
+	names.emplace_back("physical_cpus");
+	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+
+	names.emplace_back("num_cores");
+	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+
+	names.emplace_back("cpu_frequency_hz");
+	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
+
+	names.emplace_back("l1d_cache_kb");
+	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+
+	names.emplace_back("l1i_cache_kb");
+	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+
+	names.emplace_back("l2_cache_kb");
+	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+
+	names.emplace_back("l3_cache_kb");
+	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+
+	names.emplace_back("cpu_family");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("cpu_type");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	names.emplace_back("byte_order");
+	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
+
+	return nullptr;
+}
+
+unique_ptr<GlobalTableFunctionState> SysCPUInfoInit(ClientContext &context, TableFunctionInitInput &input) {
+	return make_uniq<SysCPUInfoData>();
+}
+
+void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChunk &output) {
+	auto &data = data_p.global_state->Cast<SysCPUInfoData>();
+
+	if (data.finished) {
+		return;
+	}
+
+	CPUInfo info = GetCPUInfo();
+
+	idx_t col_idx = 0;
+
+	// model_name
+	output.SetValue(col_idx++, 0, Value(info.model_name));
+
+	// architecture
+	output.SetValue(col_idx++, 0, Value(info.architecture));
+
+	// vendor_id
+	output.SetValue(col_idx++, 0, Value(info.vendor_id));
+
+	// logical_cpus
+	output.SetValue(col_idx++, 0, Value::INTEGER(info.logical_cpus));
+
+	// physical_cpus
+	output.SetValue(col_idx++, 0, Value::INTEGER(info.physical_cpus));
+
+	// num_cores
+	output.SetValue(col_idx++, 0, Value::INTEGER(info.num_cores));
+
+	// cpu_frequency_hz
+	output.SetValue(col_idx++, 0, Value::UBIGINT(info.cpu_frequency_hz));
+
+	// l1d_cache_kb
+	output.SetValue(col_idx++, 0, Value::INTEGER(info.l1d_cache_kb));
+
+	// l1i_cache_kb
+	output.SetValue(col_idx++, 0, Value::INTEGER(info.l1i_cache_kb));
+
+	// l2_cache_kb
+	output.SetValue(col_idx++, 0, Value::INTEGER(info.l2_cache_kb));
+
+	// l3_cache_kb
+	output.SetValue(col_idx++, 0, Value::INTEGER(info.l3_cache_kb));
+
+	// cpu_family
+	output.SetValue(col_idx++, 0, Value(info.cpu_family));
+
+	// cpu_type
+	output.SetValue(col_idx++, 0, Value(info.cpu_type));
+
+	// byte_order
+	output.SetValue(col_idx++, 0, Value(info.byte_order));
+
+	output.SetCardinality(1);
+	data.finished = true;
+}
+
 void LoadInternal(ExtensionLoader &loader) {
+	// Register sys_memory_info table function
 	TableFunction sys_memory_info_func("sys_memory_info", {}, SysMemoryInfoFunc, SysMemoryInfoBind, SysMemoryInfoInit);
 	loader.RegisterFunction(sys_memory_info_func);
+
+	// Register sys_cpu_info table function
+	TableFunction sys_cpu_info_func("sys_cpu_info", {}, SysCPUInfoFunc, SysCPUInfoBind, SysCPUInfoInit);
+	loader.RegisterFunction(sys_cpu_info_func);
 }
 
 } // namespace

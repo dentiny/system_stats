@@ -59,3 +59,23 @@ WHERE total_memory IS NOT NULL
   AND free_swap IS NOT NULL;
 ----
 1
+
+# Test sys_cpu_info function
+query I
+SELECT COUNT(*) FROM sys_cpu_info();
+----
+1
+
+# Test that CPU info returns valid data
+query I
+SELECT 
+    CASE 
+        WHEN model_name IS NOT NULL 
+          OR architecture IS NOT NULL
+          OR num_cores > 0 
+        THEN 1 
+        ELSE 0 
+    END
+FROM sys_cpu_info();
+----
+1
