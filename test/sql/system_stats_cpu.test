@@ -12,7 +12,7 @@ SELECT COUNT(*) FROM sys_cpu_info();
 1
 
 # Test that byte_order is always "Little Endian"
-query T
-SELECT cpu_byte_order = 'Little Endian' FROM sys_cpu_info();
+query I
+SELECT cpu_byte_order FROM sys_cpu_info();
 ----
-true
+Little Endian
