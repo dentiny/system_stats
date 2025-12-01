@@ -1,0 +1,66 @@
+# name: test/sql/system_stats.test
+# description: test system_stats extension
+# group: [sql]
+
+# Before we load the extension, this will fail
+statement error
+SELECT * FROM sys_memory_info();
+----
+Catalog Error: Table Function with name sys_memory_info does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require system_stats
+
+# Test sys_memory_info function
+query IIIIIIIII
+SELECT 
+    total_memory > 0,
+    used_memory > 0,
+    free_memory >= 0,
+    available_memory >= 0,
+    cached_memory >= 0,
+    buffers_memory >= 0,
+    total_swap >= 0,
+    used_swap >= 0,
+    free_swap >= 0
+FROM sys_memory_info();
+----
+true	true	true	true	true	true	true	true	true
+
+# Test that total memory is greater than used memory
+query I
+SELECT total_memory > used_memory FROM sys_memory_info();
+----
+true
+
+# Test that total swap equals used + free swap (if swap exists)
+query I
+SELECT CASE 
+    WHEN total_swap > 0 THEN total_swap >= (used_swap + free_swap) * 0.99
+    ELSE true
+END
+FROM sys_memory_info();
+----
+true
+
+# Test that the function returns exactly one row
+query I
+SELECT COUNT(*) FROM sys_memory_info();
+----
+1
+
+# Test that all memory values are numeric and not null
+query I
+SELECT COUNT(*) FROM sys_memory_info()
+WHERE total_memory IS NOT NULL
+  AND used_memory IS NOT NULL
+  AND free_memory IS NOT NULL
+  AND available_memory IS NOT NULL
+  AND cached_memory IS NOT NULL
+  AND buffers_memory IS NOT NULL
+  AND total_swap IS NOT NULL
+  AND used_swap IS NOT NULL
+  AND free_swap IS NOT NULL;
+----
+1
+
