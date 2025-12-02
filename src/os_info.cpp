@@ -156,37 +156,55 @@ bool ReadProcessStatus(int32_t &active_processes, int32_t &running_processes, in
 		}
 
 		char *line = line_buf.data();
+		char *line_end = line + line_buf.size();
 
-		// Read pid (first field)
+		// Ensure the buffer is null-terminated
+		line_buf[line_buf.size() - 1] = '\0';
+
+		// Read pid
 		int pid = 0;
 		char *endptr = nullptr;
 		pid = static_cast<int>(strtol(line, &endptr, 10));
-		if (endptr == line || *endptr == '\0') {
+		if (endptr == line || endptr >= line_end || *endptr == '\0') {
 			continue;
 		}
 		line = endptr;
 
 		// Skip whitespace and find opening paren of comm field
-		while (*line == ' ' || *line == '\t') {
+		while (line < line_end && *line != '\0' && (*line == ' ' || *line == '\t')) {
 			line++;
 		}
-		if (*line != '(') {
+		if (line >= line_end || *line == '\0' || *line != '(') {
 			continue;
 		}
 		line++; // Skip opening paren
-
-		// Find closing paren of comm field
-		char *comm_end = strrchr(line, ')');
-		if (!comm_end) {
+		if (line >= line_end || *line == '\0') {
 			continue;
 		}
+
+		// Find closing paren of comm field (strrchr searches until null terminator)
+		char *comm_end = strrchr(line, ')');
+		if (!comm_end || comm_end < line || comm_end >= line_end) {
+			continue;
+		}
+		char saved_char = *comm_end;
 		*comm_end = '\0'; // Temporarily null-terminate for parsing
 		line = comm_end + 1;
+		if (line >= line_end || *line == '\0') {
+			*comm_end = saved_char; // Restore before continue
+			continue;
+		}
 
 		// Skip whitespace after comm field
-		while (*line == ' ' || *line == '\t') {
+		while (line < line_end && *line != '\0' && (*line == ' ' || *line == '\t')) {
 			line++;
 		}
+		if (line >= line_end || *line == '\0') {
+			*comm_end = saved_char; // Restore before continue
+			continue;
+		}
+		// Restore the character we overwrote (though we don't need it anymore)
+		*comm_end = saved_char;
 
 		// Now parse: state ppid pgrp session tty_nr tpgid flags minflt cminflt majflt cmajflt
 		//           utime stime cutime cstime priority nice num_threads ...
