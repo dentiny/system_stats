@@ -210,8 +210,14 @@ int32_t GetThreadCountMacOS() {
 	size_t num_procs = len / sizeof(struct kinfo_proc);
 	struct kinfo_proc *procs = reinterpret_cast<struct kinfo_proc *>(buf);
 	int32_t total_threads = 0;
-	for (size_t i = 0; i < num_procs; i++) {
-		total_threads += procs[i].kp_proc.p_nthreads;
+
+	for (size_t idx = 0; idx < num_procs; idx++) {
+		pid_t pid = procs[idx].kp_proc.p_pid;
+		struct proc_taskinfo info;
+		int ret = proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &info, sizeof(info));
+		if (ret > 0) {
+			total_threads += info.pti_threadnum;
+		}
 	}
 
 	return total_threads;
@@ -242,8 +248,8 @@ int32_t GetHandleCountMacOS() {
 	struct kinfo_proc *procs = reinterpret_cast<struct kinfo_proc *>(buf);
 	int32_t total_handles = 0;
 
-	for (size_t i = 0; i < num_procs; i++) {
-		pid_t pid = procs[i].kp_proc.p_pid;
+	for (size_t idx = 0; idx < num_procs; idx++) {
+		pid_t pid = procs[idx].kp_proc.p_pid;
 		int num_fds = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, nullptr, 0);
 		if (num_fds > 0) {
 			total_handles += num_fds / sizeof(proc_fdinfo);
