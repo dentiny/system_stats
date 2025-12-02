@@ -6,6 +6,8 @@
 
 namespace duckdb {
 
+namespace {
+
 bool SysDiskInfoBindData::Equals(const FunctionData &other_p) const {
 	auto &other = other_p.Cast<SysDiskInfoBindData>();
 	return unit == other.unit;
@@ -107,6 +109,8 @@ void SysDiskInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChu
 
 	output.SetCardinality(output_count);
 }
+
+} // namespace
 
 void RegisterSysDiskInfoFunction(ExtensionLoader &loader) {
 	TableFunction sys_disk_info_func("sys_disk_info", {}, SysDiskInfoFunc, SysDiskInfoBind, SysDiskInfoInit);

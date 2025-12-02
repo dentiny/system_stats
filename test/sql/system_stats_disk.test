@@ -11,13 +11,13 @@ SELECT COUNT(*) >= 1 FROM sys_disk_info();
 ----
 true
 
-# Test sys_disk_info function with unit='GB' (decimal)
+# Test sys_disk_info function with unit='GB'
 query I
 SELECT COUNT(*) >= 1 FROM sys_disk_info(unit='GB');
 ----
 true
 
-# Test sys_disk_info function with unit='MiB' (binary)
+# Test sys_disk_info function with unit='MiB'
 query I
 SELECT COUNT(*) >= 1 FROM sys_disk_info(unit='MiB');
 ----

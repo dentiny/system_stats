@@ -6,6 +6,8 @@
 
 namespace duckdb {
 
+namespace {
+
 bool SysMemoryInfoBindData::Equals(const FunctionData &other_p) const {
 	auto &other = other_p.Cast<SysMemoryInfoBindData>();
 	return unit == other.unit;
@@ -98,6 +100,8 @@ void SysMemoryInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataC
 	output.SetCardinality(1);
 	data.finished = true;
 }
+
+} // namespace
 
 void RegisterSysMemoryInfoFunction(ExtensionLoader &loader) {
 	TableFunction sys_memory_info_func("sys_memory_info", {}, SysMemoryInfoFunc, SysMemoryInfoBind, SysMemoryInfoInit);

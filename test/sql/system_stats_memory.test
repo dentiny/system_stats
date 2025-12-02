@@ -33,7 +33,7 @@ FROM sys_memory_info(unit='MB');
 ----
 true	true	true	true	true	true	true
 
-# Test sys_memory_info function with unit='GiB' (binary)
+# Test sys_memory_info function with unit='GiB'
 query IIIIIII
 SELECT 
     total_memory > 0,

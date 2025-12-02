@@ -6,6 +6,8 @@
 
 namespace duckdb {
 
+namespace {
+
 struct SysCPUInfoData : public GlobalTableFunctionState {
 	SysCPUInfoData() : finished(false) {
 	}
@@ -14,7 +16,6 @@ struct SysCPUInfoData : public GlobalTableFunctionState {
 
 unique_ptr<FunctionData> SysCPUInfoBind(ClientContext &context, TableFunctionBindInput &input,
                                         vector<LogicalType> &return_types, vector<string> &names) {
-	// Match PostgreSQL system_stats extension column names
 	names.emplace_back("model_name");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
@@ -96,6 +97,8 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 	output.SetCardinality(1);
 	data.finished = true;
 }
+
+} // namespace
 
 void RegisterSysCPUInfoFunction(ExtensionLoader &loader) {
 	TableFunction sys_cpu_info_func("sys_cpu_info", {}, SysCPUInfoFunc, SysCPUInfoBind, SysCPUInfoInit);
