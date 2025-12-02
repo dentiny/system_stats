@@ -10,6 +10,7 @@
 #include <array>
 #include <cctype>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <dirent.h>
 #include <fstream>
@@ -86,7 +87,7 @@ int32_t ReadHandleCountFallback() {
 	int32_t handle_count = 0;
 	struct dirent *ent;
 	while ((ent = readdir(dirp)) != nullptr) {
-		if (!std::isdigit(static_cast<unsigned char>(ent->d_name[0]))) {
+		if (ent->d_name[0] == '\0' || !std::isdigit(static_cast<unsigned char>(ent->d_name[0]))) {
 			continue;
 		}
 
@@ -96,15 +97,13 @@ int32_t ReadHandleCountFallback() {
 		if (!fd_dirp) {
 			continue;
 		}
-
 		SCOPE_EXIT {
 			closedir(fd_dirp);
 		};
 
-		struct dirent *fd_ent;
+		struct dirent *fd_ent = nullptr;
 		while ((fd_ent = readdir(fd_dirp)) != nullptr) {
-			// Count entries that are numeric (file descriptor numbers)
-			if (std::isdigit(static_cast<unsigned char>(fd_ent->d_name[0]))) {
+			if (fd_ent->d_name[0] != '\0' && std::isdigit(static_cast<unsigned char>(fd_ent->d_name[0]))) {
 				handle_count++;
 			}
 		}
@@ -134,7 +133,7 @@ bool ReadProcessStatus(int32_t &active_processes, int32_t &running_processes, in
 
 	struct dirent *ent;
 	while ((ent = readdir(dirp)) != nullptr) {
-		if (!std::isdigit(static_cast<unsigned char>(ent->d_name[0]))) {
+		if (ent->d_name[0] == '\0' || !std::isdigit(static_cast<unsigned char>(ent->d_name[0]))) {
 			continue;
 		}
 
@@ -150,22 +149,58 @@ bool ReadProcessStatus(int32_t &active_processes, int32_t &running_processes, in
 			fclose(stat_file);
 		};
 
-		// Parse stat file format:
-		// pid comm state ppid pgrp session tty_nr tpgid flags minflt cminflt majflt cmajflt
-		// utime stime cutime cstime priority nice num_threads ...
-		// State is 3rd field, threads is 20th field
-		int pid, ppid, pgrp, session, tty_nr, tpgid;
-		unsigned long flags, minflt, cminflt, majflt, cmajflt;
-		unsigned long utime, stime, cutime, cstime;
-		long priority, nice;
-		char state = '\0';
-		unsigned long threads = 0;
-		std::array<char, 256> comm;
+		// Read the entire line to handle comm field which can contain spaces and parentheses
+		std::array<char, 512> line_buf;
+		if (!fgets(line_buf.data(), line_buf.size(), stat_file)) {
+			continue;
+		}
 
-		// Use fscanf to parse the stat file
-		if (fscanf(stat_file, "%d %s %c %d %d %d %d %d %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %ld %ld %lu", &pid,
-		           comm.data(), &state, &ppid, &pgrp, &session, &tty_nr, &tpgid, &flags, &minflt, &cminflt, &majflt,
-		           &cmajflt, &utime, &stime, &cutime, &cstime, &priority, &nice, &threads) < 20) {
+		char *line = line_buf.data();
+
+		// Read pid (first field)
+		int pid = 0;
+		char *endptr = nullptr;
+		pid = static_cast<int>(strtol(line, &endptr, 10));
+		if (endptr == line || *endptr == '\0') {
+			continue;
+		}
+		line = endptr;
+
+		// Skip whitespace and find opening paren of comm field
+		while (*line == ' ' || *line == '\t') {
+			line++;
+		}
+		if (*line != '(') {
+			continue;
+		}
+		line++; // Skip opening paren
+
+		// Find closing paren of comm field
+		char *comm_end = strrchr(line, ')');
+		if (!comm_end) {
+			continue;
+		}
+		*comm_end = '\0'; // Temporarily null-terminate for parsing
+		line = comm_end + 1;
+
+		// Skip whitespace after comm field
+		while (*line == ' ' || *line == '\t') {
+			line++;
+		}
+
+		// Now parse: state ppid pgrp session tty_nr tpgid flags minflt cminflt majflt cmajflt
+		//           utime stime cutime cstime priority nice num_threads ...
+		char state = '\0';
+		int ppid = 0, pgrp = 0, session = 0, tty_nr = 0, tpgid = 0;
+		unsigned long flags = 0, minflt = 0, cminflt = 0, majflt = 0, cmajflt = 0;
+		unsigned long utime = 0, stime = 0, cutime = 0, cstime = 0;
+		long priority = 0, nice = 0;
+		unsigned long threads = 0;
+
+		int scanned = sscanf(line, "%c %d %d %d %d %d %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %ld %ld %lu", &state,
+		                     &ppid, &pgrp, &session, &tty_nr, &tpgid, &flags, &minflt, &cminflt, &majflt, &cmajflt,
+		                     &utime, &stime, &cutime, &cstime, &priority, &nice, &threads);
+		if (scanned < 19) {
 			continue;
 		}
 
