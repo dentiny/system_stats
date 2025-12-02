@@ -1,5 +1,6 @@
 #include "network_stats_query_function.hpp"
 
+#include "duckdb/common/assert.hpp"
 #include "duckdb/common/types/value.hpp"
 #include "duckdb/common/vector.hpp"
 #include "duckdb/common/vector_size.hpp"
@@ -21,7 +22,11 @@ struct SysNetworkInfoData : public GlobalTableFunctionState {
 
 unique_ptr<FunctionData> SysNetworkInfoBind(ClientContext &context, TableFunctionBindInput &input,
                                             vector<LogicalType> &return_types, vector<string> &names) {
-	// Match PostgreSQL system_stats extension column names
+	D_ASSERT(return_types.empty());
+	D_ASSERT(names.empty());
+	return_types.reserve(11);
+	names.reserve(11);
+
 	names.emplace_back("interface_name");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 

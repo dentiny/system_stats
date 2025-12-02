@@ -1,6 +1,7 @@
 #include "disk_stats_query_function.hpp"
 
 #include "disk_stats.hpp"
+#include "duckdb/common/assert.hpp"
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "memory_unit_util.hpp"
@@ -35,6 +36,11 @@ struct SysDiskInfoData : public GlobalTableFunctionState {
 
 unique_ptr<FunctionData> SysDiskInfoBind(ClientContext &context, TableFunctionBindInput &input,
                                          vector<LogicalType> &return_types, vector<string> &names) {
+	D_ASSERT(return_types.empty());
+	D_ASSERT(names.empty());
+	return_types.reserve(6);
+	names.reserve(6);
+
 	auto result = make_uniq<SysDiskInfoBindData>();
 
 	// Parse unit parameter if provided
@@ -43,7 +49,6 @@ unique_ptr<FunctionData> SysDiskInfoBind(ClientContext &context, TableFunctionBi
 		result->unit = ParseUnit(unit_it->second.ToString());
 	}
 
-	// Match PostgreSQL system_stats extension column names
 	names.emplace_back("mount_point");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 

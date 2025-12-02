@@ -1,5 +1,6 @@
 #include "memory_stats_query_function.hpp"
 
+#include "duckdb/common/assert.hpp"
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "memory_stats.hpp"
@@ -32,6 +33,11 @@ struct SysMemoryInfoData : public GlobalTableFunctionState {
 
 unique_ptr<FunctionData> SysMemoryInfoBind(ClientContext &context, TableFunctionBindInput &input,
                                            vector<LogicalType> &return_types, vector<string> &names) {
+	D_ASSERT(return_types.empty());
+	D_ASSERT(names.empty());
+	return_types.reserve(7);
+	names.reserve(7);
+
 	auto result = make_uniq<SysMemoryInfoBindData>();
 
 	// Parse unit parameter if provided

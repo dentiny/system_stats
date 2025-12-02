@@ -1,5 +1,6 @@
 #include "os_info_query_function.hpp"
 
+#include "duckdb/common/assert.hpp"
 #include "duckdb/common/types/value.hpp"
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
@@ -19,7 +20,11 @@ struct SysOSInfoData : public GlobalTableFunctionState {
 
 unique_ptr<FunctionData> SysOSInfoBind(ClientContext &context, TableFunctionBindInput &input,
                                        vector<LogicalType> &return_types, vector<string> &names) {
-	// Match PostgreSQL system_stats extension column names
+	D_ASSERT(return_types.empty());
+	D_ASSERT(names.empty());
+	return_types.reserve(10);
+	names.reserve(10);
+
 	names.emplace_back("name");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
