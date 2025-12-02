@@ -114,16 +114,6 @@ CPUInfo GetCPUInfoLinux() {
 		if (key == "cpu MHz") {
 			// Each "cpu MHz" line represents a logical processor
 			info.logical_cpus++;
-
-			// Store CPU frequency from first entry (convert MHz to Hz)
-			if (info.cpu_frequency_hz == 0) {
-				try {
-					float mhz = std::stof(value);
-					info.cpu_frequency_hz = static_cast<uint64_t>(mhz * 1000000);
-				} catch (...) {
-					// Ignore parse errors
-				}
-			}
 			continue;
 		}
 		if (key == "physical id") {
@@ -236,11 +226,6 @@ CPUInfo GetCPUInfoMacOS() {
 	// Physical CPUs
 	if (sysctlbyname("hw.physicalcpu", &int_val, &int_size, 0, 0) == 0) {
 		info.physical_cpus = int_val;
-	}
-
-	// CPU frequency
-	if (sysctlbyname("hw.cpufrequency", &uint64_val, &uint64_size, 0, 0) == 0) {
-		info.cpu_frequency_hz = uint64_val;
 	}
 
 	// Cache sizes (convert from bytes to KB, matching PostgreSQL)

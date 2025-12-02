@@ -53,7 +53,6 @@ This function returns CPU information.
 - `architecture`: System architecture (e.g., "x86_64", "arm64")
 - `logical_processor`: Number of logical processors
 - `physical_processor`: Number of physical processors
-- `cpu_clock_speed_Hz`: CPU clock speed in hertz
 - `l1dcache_size_KiB`: L1 data cache size in kibibytes
 - `l1icache_size_KiB`: L1 instruction cache size in kibibytes
 - `l2cache_size_KiB`: L2 cache size in kibibytes

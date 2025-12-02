@@ -47,3 +47,14 @@ SELECT COUNT(*) = COUNT(*) FILTER (WHERE os_up_since_seconds >= 0) FROM sys_os_i
 ----
 true
 
+# Test that handle_count is greater than 0
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE handle_count > 0) FROM sys_os_info();
+----
+true
+
+# Test that thread_count is greater than 0
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE thread_count > 0) FROM sys_os_info();
+----
+true
