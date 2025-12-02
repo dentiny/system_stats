@@ -3,21 +3,26 @@
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "memory_stats.hpp"
+#include "memory_unit_util.hpp"
 
 namespace duckdb {
 
 namespace {
 
-bool SysMemoryInfoBindData::Equals(const FunctionData &other_p) const {
-	auto &other = other_p.Cast<SysMemoryInfoBindData>();
-	return unit == other.unit;
-}
+struct SysMemoryInfoBindData : public FunctionData {
+	MemoryUnit unit = MemoryUnit::BYTES;
 
-unique_ptr<FunctionData> SysMemoryInfoBindData::Copy() const {
-	auto result = make_uniq<SysMemoryInfoBindData>();
-	result->unit = unit;
-	return std::move(result);
-}
+	bool Equals(const FunctionData &other_p) const override {
+		auto &other = other_p.Cast<SysMemoryInfoBindData>();
+		return unit == other.unit;
+	}
+
+	unique_ptr<FunctionData> Copy() const override {
+		auto result = make_uniq<SysMemoryInfoBindData>();
+		result->unit = unit;
+		return std::move(result);
+	}
+};
 
 struct SysMemoryInfoData : public GlobalTableFunctionState {
 	SysMemoryInfoData() : finished(false) {
