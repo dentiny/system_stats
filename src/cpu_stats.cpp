@@ -5,6 +5,7 @@
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/string_util.hpp"
+#include "string_utils.hpp"
 
 #ifdef __linux__
 #include <fstream>
@@ -99,12 +100,8 @@ CPUInfo GetCPUInfoLinux() {
 			continue;
 		}
 
-		string key = line.substr(0, colon_pos);
-		key.erase(key.find_last_not_of(" \t") + 1);
-
-		string value = line.substr(colon_pos + 1);
-		value.erase(0, value.find_first_not_of(" \t"));
-		value.erase(value.find_last_not_of(" \t\n\r") + 1);
+		string key = TrimString(line.substr(0, colon_pos));
+		string value = TrimString(line.substr(colon_pos + 1));
 
 		if (key == "model name") {
 			info.model_name = value;

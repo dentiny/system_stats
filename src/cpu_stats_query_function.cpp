@@ -1,6 +1,7 @@
 #include "cpu_stats_query_function.hpp"
 
 #include "cpu_stats.hpp"
+#include "duckdb/common/assert.hpp"
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
 
@@ -16,6 +17,11 @@ struct SysCPUInfoData : public GlobalTableFunctionState {
 
 unique_ptr<FunctionData> SysCPUInfoBind(ClientContext &context, TableFunctionBindInput &input,
                                         vector<LogicalType> &return_types, vector<string> &names) {
+	D_ASSERT(return_types.empty());
+	D_ASSERT(names.empty());
+	return_types.reserve(10);
+	names.reserve(10);
+
 	names.emplace_back("model_name");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 

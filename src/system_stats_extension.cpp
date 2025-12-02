@@ -7,6 +7,7 @@
 #include "duckdb.hpp"
 #include "memory_stats_query_function.hpp"
 #include "network_stats_query_function.hpp"
+#include "os_info_query_function.hpp"
 
 namespace duckdb {
 
@@ -17,6 +18,7 @@ void LoadInternal(ExtensionLoader &loader) {
 	RegisterSysCPUInfoFunction(loader);
 	RegisterSysDiskInfoFunction(loader);
 	RegisterSysNetworkInfoFunction(loader);
+	RegisterSysOSInfoFunction(loader);
 }
 
 } // namespace

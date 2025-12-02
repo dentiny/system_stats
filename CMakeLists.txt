@@ -21,6 +21,9 @@ set(EXTENSION_SOURCES
     src/memory_unit_util.cpp
     src/network_stats.cpp
     src/network_stats_query_function.cpp
+    src/os_info.cpp
+    src/os_info_query_function.cpp
+    src/string_utils.cpp
     src/system_stats_extension.cpp)
 
 build_static_extension(${TARGET_NAME} ${EXTENSION_SOURCES})
@@ -31,3 +34,9 @@ install(
   EXPORT "${DUCKDB_EXPORT_SET}"
   LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
   ARCHIVE DESTINATION "${INSTALL_LIB_DIR}")
+
+# Test cases.
+include_directories(duckdb/third_party/catch)
+
+add_executable(test_string_utils unit/test_string_utils.cpp)
+target_link_libraries(test_string_utils ${EXTENSION_NAME})
