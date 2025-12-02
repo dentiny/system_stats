@@ -11,8 +11,15 @@ set(LOADABLE_EXTENSION_NAME ${TARGET_NAME}_loadable_extension)
 project(${TARGET_NAME})
 include_directories(src/include)
 
-set(EXTENSION_SOURCES src/system_stats_extension.cpp src/memory_stats.cpp
-                      src/cpu_stats.cpp src/disk_stats.cpp)
+set(EXTENSION_SOURCES
+    src/system_stats_extension.cpp
+    src/memory_stats.cpp
+    src/cpu_stats.cpp
+    src/disk_stats.cpp
+    src/memory_unit_util.cpp
+    src/memory_stats_query_function.cpp
+    src/cpu_stats_query_function.cpp
+    src/disk_stats_query_function.cpp)
 
 build_static_extension(${TARGET_NAME} ${EXTENSION_SOURCES})
 build_loadable_extension(${TARGET_NAME} " " ${EXTENSION_SOURCES})

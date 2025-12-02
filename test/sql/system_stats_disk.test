@@ -10,3 +10,21 @@ query I
 SELECT COUNT(*) >= 1 FROM sys_disk_info();
 ----
 true
+
+# Test sys_disk_info function with unit='GB' (decimal)
+query I
+SELECT COUNT(*) >= 1 FROM sys_disk_info(unit='GB');
+----
+true
+
+# Test sys_disk_info function with unit='MiB' (binary)
+query I
+SELECT COUNT(*) >= 1 FROM sys_disk_info(unit='MiB');
+----
+true
+
+# Test sys_disk_info function with invalid unit
+statement error
+SELECT * FROM sys_disk_info(unit='invalid');
+----
+Invalid unit 'invalid'. Supported units: bytes, KB, KiB, MB, MiB, GB, GiB, TB, TiB
