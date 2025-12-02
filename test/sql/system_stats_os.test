@@ -1,0 +1,49 @@
+# name: test/sql/system_stats_os.test
+# description: test sys_os_info function
+# group: [sql]
+
+# Require statement will ensure this test is run with this extension loaded
+require system_stats
+
+# Test sys_os_info function returns exactly one row
+query I
+SELECT COUNT(*) FROM sys_os_info();
+----
+1
+
+# Test that name is not empty
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE name != '') FROM sys_os_info();
+----
+true
+
+# Test that version is not empty
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE version != '') FROM sys_os_info();
+----
+true
+
+# Test that host_name is not empty
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE host_name != '') FROM sys_os_info();
+----
+true
+
+# Test that architecture is not empty
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE architecture != '') FROM sys_os_info();
+----
+true
+
+# Test that process_count is non-negative
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE process_count >= 0) FROM sys_os_info();
+----
+true
+
+# Test that os_up_since_seconds is non-negative
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE os_up_since_seconds >= 0) FROM sys_os_info();
+----
+true
+

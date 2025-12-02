@@ -118,6 +118,28 @@ SELECT * FROM sys_network_info();
 
 **Note:** On macOS, `tx_dropped` and `link_speed_mbps` may return 0 as these values are not available through the system APIs.
 
+### sys_os_info()
+This function returns operating system information.
+
+**Output columns:**
+- `name`: Operating system name
+- `version`: Operating system version
+- `host_name`: System hostname
+- `domain_name`: DNS domain name
+- `handle_count`: Number of open file handles (Linux only, 0 on macOS)
+- `process_count`: Total number of processes
+- `thread_count`: Total number of threads (Linux only, 0 on macOS)
+- `architecture`: System architecture
+- `last_bootup_time`: Last boot time (empty on Linux/macOS, not available)
+- `os_up_since_seconds`: System uptime in seconds
+
+**Example:**
+```sql
+SELECT * FROM sys_os_info();
+```
+
+**Note:** On macOS, `handle_count`, `thread_count`, and `last_bootup_time` return 0 or empty as these values are not available through the system APIs.
+
 ## Limitations
 
 - Cache sizes may not be available in containerized environments

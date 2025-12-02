@@ -21,6 +21,9 @@ set(EXTENSION_SOURCES
     src/memory_unit_util.cpp
     src/network_stats.cpp
     src/network_stats_query_function.cpp
+    src/os_info.cpp
+    src/os_info_query_function.cpp
+    src/string_utils.cpp
     src/system_stats_extension.cpp)
 
 build_static_extension(${TARGET_NAME} ${EXTENSION_SOURCES})
