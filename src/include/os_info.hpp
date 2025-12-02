@@ -10,7 +10,6 @@ struct OSInfo {
 	std::string name;
 	std::string version;
 	std::string host_name;
-	std::string domain_name;
 	int32_t handle_count = 0;
 	int32_t process_count = 0;
 	int32_t thread_count = 0;

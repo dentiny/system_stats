@@ -13,8 +13,6 @@
 #include <cstring>
 #include <dirent.h>
 #include <fstream>
-#include <netdb.h>
-#include <sys/socket.h>
 #include <sys/sysinfo.h>
 #include <sys/utsname.h>
 #include <unistd.h>
@@ -36,74 +34,6 @@ namespace duckdb {
 namespace {
 
 #ifdef __linux__
-// Get DNS domain name using multiple fallback strategies
-bool GetDNSDomainName(const string &hostname, string &domain_name) {
-	domain_name.clear();
-
-	// Try DNS resolution to get FQDN
-	struct addrinfo hints;
-	struct addrinfo *info = nullptr;
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_CANONNAME;
-
-	SCOPE_EXIT {
-		if (info != nullptr) {
-			freeaddrinfo(info);
-		}
-	};
-
-	if (getaddrinfo(hostname.c_str(), nullptr, &hints, &info) == 0 && info != nullptr) {
-		if (info->ai_canonname != nullptr) {
-			string canonname = info->ai_canonname;
-			size_t dot_pos = canonname.find('.');
-			if (dot_pos != string::npos && dot_pos + 1 < canonname.length()) {
-				domain_name = canonname.substr(dot_pos + 1);
-				return true;
-			}
-		}
-	}
-
-	// Fallback to reading from /etc/resolv.conf
-	std::ifstream resolv_file("/etc/resolv.conf");
-	if (resolv_file.is_open()) {
-		string line;
-		while (std::getline(resolv_file, line)) {
-			string trimmed = TrimString(line);
-			if (trimmed.substr(0, 6) == "domain") {
-				string domain_val = TrimString(trimmed.substr(6));
-				if (!domain_val.empty()) {
-					domain_name = domain_val;
-					return true;
-				}
-			} else if (domain_name.empty() && trimmed.substr(0, 6) == "search") {
-				string search_val = TrimString(trimmed.substr(6));
-				size_t space_pos = search_val.find(' ');
-				if (space_pos != string::npos) {
-					search_val = search_val.substr(0, space_pos);
-				}
-				if (!search_val.empty()) {
-					domain_name = search_val;
-					return true;
-				}
-			}
-		}
-	}
-
-	// Fallback to getdomainname()
-	std::array<char, 256> nis_domain;
-	if (getdomainname(nis_domain.data(), nis_domain.size()) == 0) {
-		string domain = nis_domain.data();
-		if (!domain.empty() && domain != "(none)" && domain != "localdomain") {
-			domain_name = domain;
-			return true;
-		}
-	}
-
-	return false;
-}
-
 // Read OS name from /etc/os-release
 bool ReadOSName(string &os_name) {
 	std::ifstream os_file("/etc/os-release");
@@ -230,12 +160,6 @@ OSInfo GetOSInfoLinux() {
 		info.host_name = hostname_buf.data();
 	}
 
-	// Get domain name
-	string domain_name;
-	if (GetDNSDomainName(info.host_name, domain_name)) {
-		info.domain_name = domain_name;
-	}
-
 	// Read OS name from /etc/os-release
 	if (!ReadOSName(info.name)) {
 		// Fallback to sysname from uname
@@ -276,15 +200,6 @@ OSInfo GetOSInfoMacOS() {
 	std::array<char, 256> hostname_buf;
 	if (gethostname(hostname_buf.data(), hostname_buf.size()) == 0) {
 		info.host_name = hostname_buf.data();
-	}
-
-	// Get domain name
-	std::array<char, 256> domain_buf;
-	if (getdomainname(domain_buf.data(), domain_buf.size()) == 0) {
-		string domain = domain_buf.data();
-		if (!domain.empty()) {
-			info.domain_name = domain;
-		}
 	}
 
 	// Get process count using sysctl (same as PostgreSQL)
