@@ -125,9 +125,9 @@ This function returns operating system information.
 - `name`: Operating system name
 - `version`: Operating system version
 - `host_name`: System hostname
-- `handle_count`: Number of open file handles (Linux only, 0 on macOS)
+- `handle_count`: Number of open file handles
 - `process_count`: Total number of processes
-- `thread_count`: Total number of threads (Linux only, 0 on macOS)
+- `thread_count`: Total number of threads
 - `architecture`: System architecture
 - `os_up_since_seconds`: System uptime in seconds
 
@@ -135,9 +135,6 @@ This function returns operating system information.
 ```sql
 SELECT * FROM sys_os_info();
 ```
-
-**Note:** 
-- On macOS, `handle_count` and `thread_count` return 0 as these values are not available through the system APIs.
 
 ## Limitations
 
