@@ -130,7 +130,6 @@ This function returns operating system information.
 - `process_count`: Total number of processes
 - `thread_count`: Total number of threads (Linux only, 0 on macOS)
 - `architecture`: System architecture
-- `last_bootup_time`: Last boot time (empty on Linux/macOS, not available)
 - `os_up_since_seconds`: System uptime in seconds
 
 **Example:**
@@ -138,7 +137,9 @@ This function returns operating system information.
 SELECT * FROM sys_os_info();
 ```
 
-**Note:** On macOS, `handle_count`, `thread_count`, and `last_bootup_time` return 0 or empty as these values are not available through the system APIs.
+**Note:** 
+- On macOS, `handle_count` and `thread_count` return 0 as these values are not available through the system APIs.
+- `domain_name` may be empty in containerized environments (e.g., Docker) where no domain is configured.
 
 ## Limitations
 

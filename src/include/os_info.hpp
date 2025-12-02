@@ -15,7 +15,6 @@ struct OSInfo {
 	int32_t process_count = 0;
 	int32_t thread_count = 0;
 	std::string architecture;
-	std::string last_bootup_time; // NULL/empty on Linux/macOS
 	int32_t os_up_since_seconds = 0;
 };
 

@@ -259,9 +259,6 @@ OSInfo GetOSInfoLinux() {
 		info.os_up_since_seconds = static_cast<int32_t>(s_info.uptime);
 	}
 
-	// last_bootup_time is NULL on Linux
-	info.last_bootup_time = "";
-
 	return info;
 }
 #elif __APPLE__
@@ -314,7 +311,6 @@ OSInfo GetOSInfoMacOS() {
 	// These are NULL on macOS
 	info.handle_count = 0;
 	info.thread_count = 0;
-	info.last_bootup_time = "";
 
 	return info;
 }

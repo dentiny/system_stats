@@ -22,8 +22,8 @@ unique_ptr<FunctionData> SysOSInfoBind(ClientContext &context, TableFunctionBind
                                        vector<LogicalType> &return_types, vector<string> &names) {
 	D_ASSERT(return_types.empty());
 	D_ASSERT(names.empty());
-	return_types.reserve(10);
-	names.reserve(10);
+	return_types.reserve(9);
+	names.reserve(9);
 
 	names.emplace_back("name");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
@@ -47,9 +47,6 @@ unique_ptr<FunctionData> SysOSInfoBind(ClientContext &context, TableFunctionBind
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
 
 	names.emplace_back("architecture");
-	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
-
-	names.emplace_back("last_bootup_time");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
 	names.emplace_back("os_up_since_seconds");
@@ -95,13 +92,6 @@ void SysOSInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChunk
 
 	// architecture
 	output.SetValue(col_idx++, 0, Value(info.architecture));
-
-	// last_bootup_time (empty string means NULL in our case)
-	if (info.last_bootup_time.empty()) {
-		output.SetValue(col_idx++, 0, Value());
-	} else {
-		output.SetValue(col_idx++, 0, Value(info.last_bootup_time));
-	}
 
 	// os_up_since_seconds
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.os_up_since_seconds));
