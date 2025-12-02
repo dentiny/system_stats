@@ -14,9 +14,6 @@ struct CPUInfo {
 	int32_t logical_cpus = 0;
 	int32_t physical_cpus = 0;
 
-	// Clock speed
-	uint64_t cpu_frequency_hz = 0;
-
 	// Cache sizes (in KB)
 	int32_t l1d_cache_kb = 0;
 	int32_t l1i_cache_kb = 0;

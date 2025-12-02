@@ -16,3 +16,15 @@ query I
 SELECT cpu_byte_order FROM sys_cpu_info();
 ----
 Little Endian
+
+# Test that logical_processor is greater than 0
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE logical_processor > 0) FROM sys_cpu_info();
+----
+true
+
+# Test that physical_processor is greater than 0
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE physical_processor > 0) FROM sys_cpu_info();
+----
+true

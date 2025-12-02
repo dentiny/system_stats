@@ -23,6 +23,24 @@ SELECT COUNT(*) >= 1 FROM sys_disk_info(unit='MiB');
 ----
 true
 
+# Test that total_space is greater than 0 for at least one disk
+query I
+SELECT COUNT(*) FILTER (WHERE total_space > 0) >= 1 FROM sys_disk_info();
+----
+true
+
+# Test that used_space is non-negative
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE used_space >= 0) FROM sys_disk_info();
+----
+true
+
+# Test that free_space is non-negative
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE free_space >= 0) FROM sys_disk_info();
+----
+true
+
 # Test sys_disk_info function with invalid unit
 statement error
 SELECT * FROM sys_disk_info(unit='invalid');

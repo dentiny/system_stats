@@ -17,3 +17,38 @@ SELECT COUNT(*) = COUNT(*) FILTER (WHERE interface_name != '') FROM sys_network_
 ----
 true
 
+# Test that tx_bytes is non-negative
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE tx_bytes >= 0) FROM sys_network_info();
+----
+true
+
+# Test that rx_bytes is non-negative
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE rx_bytes >= 0) FROM sys_network_info();
+----
+true
+
+# Test that tx_packets is non-negative
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE tx_packets >= 0) FROM sys_network_info();
+----
+true
+
+# Test that rx_packets is non-negative
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE rx_packets >= 0) FROM sys_network_info();
+----
+true
+
+# Test that tx_errors is non-negative
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE tx_errors >= 0) FROM sys_network_info();
+----
+true
+
+# Test that rx_errors is non-negative
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE rx_errors >= 0) FROM sys_network_info();
+----
+true

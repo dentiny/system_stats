@@ -19,8 +19,8 @@ unique_ptr<FunctionData> SysCPUInfoBind(ClientContext &context, TableFunctionBin
                                         vector<LogicalType> &return_types, vector<string> &names) {
 	D_ASSERT(return_types.empty());
 	D_ASSERT(names.empty());
-	return_types.reserve(10);
-	names.reserve(10);
+	return_types.reserve(9);
+	names.reserve(9);
 
 	names.emplace_back("model_name");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
@@ -33,9 +33,6 @@ unique_ptr<FunctionData> SysCPUInfoBind(ClientContext &context, TableFunctionBin
 
 	names.emplace_back("physical_processor");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
-
-	names.emplace_back("cpu_clock_speed_Hz");
-	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
 
 	names.emplace_back("l1dcache_size_KiB");
 	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
@@ -81,9 +78,6 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 
 	// physical_processor
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.physical_cpus));
-
-	// cpu_clock_speed_Hz
-	output.SetValue(col_idx++, 0, Value::UBIGINT(info.cpu_frequency_hz));
 
 	// l1dcache_size_KiB
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.l1d_cache_kb));

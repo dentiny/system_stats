@@ -186,6 +186,79 @@ OSInfo GetOSInfoLinux() {
 	return info;
 }
 #elif __APPLE__
+// Get thread count on macOS by summing threads from all processes
+int32_t GetThreadCountMacOS() {
+	std::array<int, 4> mib = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
+	size_t len = 0;
+	if (sysctl(mib.data(), mib.size(), nullptr, &len, nullptr, 0) != 0 || len == 0) {
+		return 0;
+	}
+
+	char *buf = static_cast<char *>(malloc(len));
+	if (buf == nullptr) {
+		return 0;
+	}
+
+	SCOPE_EXIT {
+		free(buf);
+	};
+
+	if (sysctl(mib.data(), mib.size(), buf, &len, nullptr, 0) != 0) {
+		return 0;
+	}
+
+	size_t num_procs = len / sizeof(struct kinfo_proc);
+	struct kinfo_proc *procs = reinterpret_cast<struct kinfo_proc *>(buf);
+	int32_t total_threads = 0;
+
+	for (size_t idx = 0; idx < num_procs; idx++) {
+		pid_t pid = procs[idx].kp_proc.p_pid;
+		struct proc_taskinfo info;
+		int ret = proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &info, sizeof(info));
+		if (ret > 0) {
+			total_threads += info.pti_threadnum;
+		}
+	}
+
+	return total_threads;
+}
+
+// Get handle count on macOS by summing file descriptors from all processes
+int32_t GetHandleCountMacOS() {
+	std::array<int, 4> mib = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
+	size_t len = 0;
+	if (sysctl(mib.data(), mib.size(), nullptr, &len, nullptr, 0) != 0 || len == 0) {
+		return 0;
+	}
+
+	char *buf = static_cast<char *>(malloc(len));
+	if (buf == nullptr) {
+		return 0;
+	}
+
+	SCOPE_EXIT {
+		free(buf);
+	};
+
+	if (sysctl(mib.data(), mib.size(), buf, &len, nullptr, 0) != 0) {
+		return 0;
+	}
+
+	size_t num_procs = len / sizeof(struct kinfo_proc);
+	struct kinfo_proc *procs = reinterpret_cast<struct kinfo_proc *>(buf);
+	int32_t total_handles = 0;
+
+	for (size_t idx = 0; idx < num_procs; idx++) {
+		pid_t pid = procs[idx].kp_proc.p_pid;
+		int num_fds = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, nullptr, 0);
+		if (num_fds > 0) {
+			total_handles += num_fds / sizeof(proc_fdinfo);
+		}
+	}
+
+	return total_handles;
+}
+
 OSInfo GetOSInfoMacOS() {
 	OSInfo info;
 
@@ -202,30 +275,24 @@ OSInfo GetOSInfoMacOS() {
 		info.host_name = hostname_buf.data();
 	}
 
-	// Get process count using sysctl (same as PostgreSQL)
-	int mib[] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
+	// Get process count using sysctl
+	std::array<int, 4> mib = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
 	size_t len = 0;
-	if (sysctl(mib, 4, nullptr, &len, nullptr, 0) == 0 && len > 0) {
-		char *buf = static_cast<char *>(malloc(len));
-		if (buf != nullptr) {
-			SCOPE_EXIT {
-				free(buf);
-			};
-			if (sysctl(mib, 4, buf, &len, nullptr, 0) == 0) {
-				info.process_count = static_cast<int32_t>(len / sizeof(struct kinfo_proc));
-			}
-		}
+	if (sysctl(mib.data(), mib.size(), nullptr, &len, nullptr, 0) == 0 && len > 0) {
+		info.process_count = static_cast<int32_t>(len / sizeof(struct kinfo_proc));
 	}
+
+	// Get thread count by summing threads from all processes
+	info.thread_count = GetThreadCountMacOS();
+
+	// Get handle count by summing file descriptors from all processes
+	info.handle_count = GetHandleCountMacOS();
 
 	// Get uptime using clock_gettime
 	struct timespec uptime;
 	if (clock_gettime(CLOCK_MONOTONIC_RAW, &uptime) == 0) {
 		info.os_up_since_seconds = static_cast<int32_t>(uptime.tv_sec);
 	}
-
-	// These are NULL on macOS
-	info.handle_count = 0;
-	info.thread_count = 0;
 
 	return info;
 }
