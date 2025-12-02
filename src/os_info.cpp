@@ -186,6 +186,37 @@ OSInfo GetOSInfoLinux() {
 	return info;
 }
 #elif __APPLE__
+// Get thread count on macOS by summing threads from all processes
+int32_t GetThreadCountMacOS() {
+	std::array<int, 4> mib = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
+	size_t len = 0;
+	if (sysctl(mib.data(), mib.size(), nullptr, &len, nullptr, 0) != 0 || len == 0) {
+		return 0;
+	}
+
+	char *buf = static_cast<char *>(malloc(len));
+	if (buf == nullptr) {
+		return 0;
+	}
+
+	SCOPE_EXIT {
+		free(buf);
+	};
+
+	if (sysctl(mib.data(), mib.size(), buf, &len, nullptr, 0) != 0) {
+		return 0;
+	}
+
+	size_t num_procs = len / sizeof(struct kinfo_proc);
+	struct kinfo_proc *procs = reinterpret_cast<struct kinfo_proc *>(buf);
+	int32_t total_threads = 0;
+	for (size_t i = 0; i < num_procs; i++) {
+		total_threads += procs[i].kp_proc.p_nthreads;
+	}
+
+	return total_threads;
+}
+
 OSInfo GetOSInfoMacOS() {
 	OSInfo info;
 
@@ -202,20 +233,15 @@ OSInfo GetOSInfoMacOS() {
 		info.host_name = hostname_buf.data();
 	}
 
-	// Get process count using sysctl (same as PostgreSQL)
-	int mib[] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
+	// Get process count using sysctl
+	std::array<int, 4> mib = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
 	size_t len = 0;
-	if (sysctl(mib, 4, nullptr, &len, nullptr, 0) == 0 && len > 0) {
-		char *buf = static_cast<char *>(malloc(len));
-		if (buf != nullptr) {
-			SCOPE_EXIT {
-				free(buf);
-			};
-			if (sysctl(mib, 4, buf, &len, nullptr, 0) == 0) {
-				info.process_count = static_cast<int32_t>(len / sizeof(struct kinfo_proc));
-			}
-		}
+	if (sysctl(mib.data(), mib.size(), nullptr, &len, nullptr, 0) == 0 && len > 0) {
+		info.process_count = static_cast<int32_t>(len / sizeof(struct kinfo_proc));
 	}
+
+	// Get thread count by summing threads from all processes
+	info.thread_count = GetThreadCountMacOS();
 
 	// Get uptime using clock_gettime
 	struct timespec uptime;
@@ -223,9 +249,8 @@ OSInfo GetOSInfoMacOS() {
 		info.os_up_since_seconds = static_cast<int32_t>(uptime.tv_sec);
 	}
 
-	// These are NULL on macOS
+	// Handle count is not available on macOS
 	info.handle_count = 0;
-	info.thread_count = 0;
 
 	return info;
 }
