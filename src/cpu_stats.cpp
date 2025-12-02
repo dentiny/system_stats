@@ -181,7 +181,6 @@ CPUInfo GetCPUInfoLinux() {
 			info.model_name = StringUtil::Format("ARM v%s (impl: %s, part: %s, variant: %s)", cpu_architecture,
 			                                     cpu_implementer, cpu_part, cpu_variant);
 		}
-
 	}
 
 	return info;

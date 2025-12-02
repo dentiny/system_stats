@@ -21,20 +21,28 @@ LOAD system_stats;
 The following table functions are provided to fetch system level statistics.
 
 ### sys_memory_info()
-This function returns memory usage information. All values are in bytes.
+This function returns memory usage information. All values are in bytes by default, but can be specified in other units using the `unit` parameter.
+
+**Parameters:**
+- `unit` (optional): Unit for memory values. Supported units: `bytes`, `KB`, `KiB`, `MB`, `MiB`, `GB`, `GiB`, `TB`, `TiB`. Defaults to `bytes`.
 
 **Output columns:**
-- `total_memory`: Total physical memory in bytes
-- `used_memory`: Used physical memory in bytes
-- `free_memory`: Free physical memory in bytes
-- `cached_memory`: Cached memory in bytes
-- `total_swap`: Total swap space in bytes
-- `used_swap`: Used swap space in bytes
-- `free_swap`: Free swap space in bytes
+- `total_memory`: Total physical memory
+- `used_memory`: Used physical memory
+- `free_memory`: Free physical memory
+- `cached_memory`: Cached memory
+- `total_swap`: Total swap space
+- `used_swap`: Used swap space
+- `free_swap`: Free swap space
 
-**Example:**
+**Examples:**
 ```sql
+-- Default: bytes
 SELECT * FROM sys_memory_info();
+
+-- Specify unit
+SELECT * FROM sys_memory_info(unit='GB');
+SELECT * FROM sys_memory_info(unit='GiB');
 ```
 
 ### sys_cpu_info()
@@ -61,19 +69,27 @@ SELECT * FROM sys_cpu_info();
 the host system information is not exposed to the container.
 
 ### sys_disk_info()
-This function returns disk and filesystem information.
+This function returns disk and filesystem information. All space values are in bytes by default, but can be specified in other units using the `unit` parameter.
+
+**Parameters:**
+- `unit` (optional): Unit for space values. Supported units: `bytes`, `KB`, `KiB`, `MB`, `MiB`, `GB`, `GiB`, `TB`, `TiB`. Defaults to `bytes`.
 
 **Output columns:**
 - `mount_point`: Mount point path
 - `file_system`: File system identifier
 - `file_system_type`: File system type (e.g., "ext4", "xfs", "apfs")
-- `total_space`: Total space in bytes
-- `used_space`: Used space in bytes
-- `free_space`: Free space in bytes
+- `total_space`: Total space
+- `used_space`: Used space
+- `free_space`: Free space
 
-**Example:**
+**Examples:**
 ```sql
+-- Default: bytes
 SELECT * FROM sys_disk_info();
+
+-- Specify unit
+SELECT * FROM sys_disk_info(unit='GB');
+SELECT * FROM sys_disk_info(unit='MiB');
 ```
 
 **Note:** Virtual filesystems (e.g., proc, sysfs, devtmpfs) and certain mount points
