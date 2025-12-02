@@ -1,0 +1,19 @@
+# name: test/sql/system_stats_network.test
+# description: test sys_network_info function
+# group: [sql]
+
+# Require statement will ensure this test is run with this extension loaded
+require system_stats
+
+# Test sys_network_info function returns at least one row
+query I
+SELECT COUNT(*) >= 1 FROM sys_network_info();
+----
+true
+
+# Test that interface_name is not empty for returned rows
+query I
+SELECT COUNT(*) = COUNT(*) FILTER (WHERE interface_name != '') FROM sys_network_info();
+----
+true
+

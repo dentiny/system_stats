@@ -95,6 +95,29 @@ SELECT * FROM sys_disk_info(unit='MiB');
 **Note:** Virtual filesystems (e.g., proc, sysfs, devtmpfs) and certain mount points
 (e.g., /dev, /proc, /sys) are automatically filtered out from the results.
 
+### sys_network_info()
+This function returns network interface information and statistics.
+
+**Output columns:**
+- `interface_name`: Network interface name
+- `ip_address`: IPv4 address of the interface
+- `tx_bytes`: Total bytes transmitted
+- `tx_packets`: Total packets transmitted
+- `tx_errors`: Total transmission errors
+- `tx_dropped`: Total packets dropped during transmission
+- `rx_bytes`: Total bytes received
+- `rx_packets`: Total packets received
+- `rx_errors`: Total receive errors
+- `rx_dropped`: Total packets dropped during receive
+- `link_speed_mbps`: Link speed in megabits per second (0 if not available)
+
+**Example:**
+```sql
+SELECT * FROM sys_network_info();
+```
+
+**Note:** On macOS, `tx_dropped` and `link_speed_mbps` may return 0 as these values are not available through the system APIs.
+
 ## Limitations
 
 - Cache sizes may not be available in containerized environments
