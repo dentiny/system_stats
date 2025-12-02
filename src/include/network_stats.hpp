@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
+#include "duckdb/common/vector.hpp"
 
 namespace duckdb {
 
@@ -21,6 +21,6 @@ struct NetworkInfo {
 };
 
 // Get network information for the current platform
-std::vector<NetworkInfo> GetNetworkInfo();
+vector<NetworkInfo> GetNetworkInfo();
 
 } // namespace duckdb

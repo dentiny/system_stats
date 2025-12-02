@@ -1,5 +1,7 @@
 #include "network_stats_query_function.hpp"
 
+#include "duckdb/common/types/value.hpp"
+#include "duckdb/common/vector.hpp"
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "network_stats.hpp"
@@ -14,7 +16,7 @@ struct SysNetworkInfoData : public GlobalTableFunctionState {
 	}
 	bool finished;
 	size_t current_index;
-	std::vector<NetworkInfo> networks;
+	vector<NetworkInfo> networks;
 };
 
 unique_ptr<FunctionData> SysNetworkInfoBind(ClientContext &context, TableFunctionBindInput &input,

@@ -100,7 +100,6 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 
 } // namespace
 
-// Register function (must be after anonymous namespace to reference anonymous functions)
 void RegisterSysCPUInfoFunction(ExtensionLoader &loader) {
 	TableFunction sys_cpu_info_func("sys_cpu_info", {}, SysCPUInfoFunc, SysCPUInfoBind, SysCPUInfoInit);
 	loader.RegisterFunction(sys_cpu_info_func);
