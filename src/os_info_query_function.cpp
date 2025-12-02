@@ -22,8 +22,8 @@ unique_ptr<FunctionData> SysOSInfoBind(ClientContext &context, TableFunctionBind
                                        vector<LogicalType> &return_types, vector<string> &names) {
 	D_ASSERT(return_types.empty());
 	D_ASSERT(names.empty());
-	return_types.reserve(9);
-	names.reserve(9);
+	return_types.reserve(8);
+	names.reserve(8);
 
 	names.emplace_back("name");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
@@ -32,9 +32,6 @@ unique_ptr<FunctionData> SysOSInfoBind(ClientContext &context, TableFunctionBind
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
 	names.emplace_back("host_name");
-	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
-
-	names.emplace_back("domain_name");
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
 	names.emplace_back("handle_count");
@@ -77,9 +74,6 @@ void SysOSInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChunk
 
 	// host_name
 	output.SetValue(col_idx++, 0, Value(info.host_name));
-
-	// domain_name
-	output.SetValue(col_idx++, 0, Value(info.domain_name));
 
 	// handle_count
 	output.SetValue(col_idx++, 0, Value::INTEGER(info.handle_count));
