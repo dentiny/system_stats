@@ -55,22 +55,62 @@ bool ReadOSName(string &os_name) {
 }
 
 // Read handle count from /proc/sys/fs/file-nr
-bool ReadHandleCount(int32_t &handle_count) {
+int32_t ReadHandleCount() {
 	std::ifstream file("/proc/sys/fs/file-nr");
 	if (!file.is_open()) {
-		return false;
+		return 0;
 	}
 
 	int allocated = 0;
 	int unallocated = 0;
 	int max_handles = 0;
-	file >> allocated >> unallocated >> max_handles;
+	file >> allocated;
 	if (file.fail()) {
-		return false;
+		return 0;
+	}
+	return allocated;
+}
+
+// Fallback: Count file descriptors from /proc/*/fd directories
+// This is used when /proc/sys/fs/file-nr is not available (e.g., older kernels or restricted environments)
+int32_t ReadHandleCountFallback() {
+	DIR *dirp = opendir("/proc");
+	if (!dirp) {
+		return 0;
 	}
 
-	handle_count = allocated;
-	return true;
+	SCOPE_EXIT {
+		closedir(dirp);
+	};
+
+	int32_t handle_count = 0;
+	struct dirent *ent;
+	while ((ent = readdir(dirp)) != nullptr) {
+		if (!std::isdigit(static_cast<unsigned char>(ent->d_name[0]))) {
+			continue;
+		}
+
+		// Count file descriptors in /proc/pid/fd
+		string fd_path = StringUtil::Format("/proc/%s/fd", ent->d_name);
+		DIR *fd_dirp = opendir(fd_path.c_str());
+		if (!fd_dirp) {
+			continue;
+		}
+
+		SCOPE_EXIT {
+			closedir(fd_dirp);
+		};
+
+		struct dirent *fd_ent;
+		while ((fd_ent = readdir(fd_dirp)) != nullptr) {
+			// Count entries that are numeric (file descriptor numbers)
+			if (std::isdigit(static_cast<unsigned char>(fd_ent->d_name[0]))) {
+				handle_count++;
+			}
+		}
+	}
+
+	return handle_count;
 }
 
 // Read process status from /proc directory
@@ -169,7 +209,11 @@ OSInfo GetOSInfoLinux() {
 	}
 
 	// Read handle count
-	ReadHandleCount(info.handle_count);
+	info.handle_count = ReadHandleCount();
+	if (info.handle_count == 0) {
+		// Fallback: count file descriptors from /proc/*/fd if /proc/sys/fs/file-nr is unavailable
+		info.handle_count = ReadHandleCountFallback();
+	}
 
 	// Read process status
 	int32_t running = 0, sleeping = 0, stopped = 0, zombie = 0;
