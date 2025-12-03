@@ -36,6 +36,16 @@ namespace duckdb {
 namespace {
 
 #ifdef __linux__
+
+struct ProcessStatus {
+	int32_t active_processes = 0;
+	int32_t running_processes = 0;
+	int32_t sleeping_processes = 0;
+	int32_t stopped_processes = 0;
+	int32_t zombie_processes = 0;
+	int32_t total_threads = 0;
+};
+
 // Read OS name from /etc/os-release; return empty string if not found.
 string ReadOSName() {
 	// Key-value pair example: PRETTY_NAME="Debian GNU/Linux 13 (trixie)"
@@ -90,7 +100,7 @@ int32_t ReadHandleCountFallback() {
 	};
 
 	int32_t handle_count = 0;
-	struct dirent *ent;
+	struct dirent *ent = nullptr;
 	while ((ent = readdir(dirp)) != nullptr) {
 		if (ent->d_name[0] == '\0' || !std::isdigit(static_cast<unsigned char>(ent->d_name[0]))) {
 			continue;
@@ -118,129 +128,114 @@ int32_t ReadHandleCountFallback() {
 }
 
 // Read process status from /proc directory
-bool ReadProcessStatus(int32_t &active_processes, int32_t &running_processes, int32_t &sleeping_processes,
-                       int32_t &stopped_processes, int32_t &zombie_processes, int32_t &total_threads) {
+ProcessStatus ReadProcessStatus() {
+	ProcessStatus status;
+
 	DIR *dirp = opendir("/proc");
 	if (!dirp) {
-		return false;
+		return status;
 	}
-
 	SCOPE_EXIT {
 		closedir(dirp);
 	};
 
-	active_processes = 0;
-	running_processes = 0;
-	sleeping_processes = 0;
-	stopped_processes = 0;
-	zombie_processes = 0;
-	total_threads = 0;
-
-	struct dirent *ent;
+	struct dirent *ent = nullptr;
 	while ((ent = readdir(dirp)) != nullptr) {
-		if (ent->d_name[0] == '\0' || !std::isdigit(static_cast<unsigned char>(ent->d_name[0]))) {
+		// Skip non-numeric entries, only PID directories start with digits.
+		if (!std::isdigit(static_cast<unsigned char>(ent->d_name[0]))) {
 			continue;
 		}
-
-		active_processes++;
-
-		string stat_path = StringUtil::Format("/proc/%s/stat", ent->d_name);
+		status.active_processes++;
+		std::string stat_path = StringUtil::Format("/proc/%s/stat", ent->d_name);
 		FILE *stat_file = fopen(stat_path.c_str(), "r");
 		if (!stat_file) {
 			continue;
 		}
-
 		SCOPE_EXIT {
 			fclose(stat_file);
 		};
 
-		// Read the entire line to handle comm field which can contain spaces and parentheses
-		std::array<char, 512> line_buf;
+		std::array<char, 512> line_buf {};
 		if (!fgets(line_buf.data(), line_buf.size(), stat_file)) {
 			continue;
 		}
 
+		// `line` is our parsing cursor into the stat line; we advance it as we consume fields.
+		// Example: [pid] [comm] [state] [ppid] ...
+		// After strtol(line, ...) `line` moves past the PID, then we continue parsing from there.
 		char *line = line_buf.data();
-		char *line_end = line + line_buf.size();
 
-		// Ensure the buffer is null-terminated
-		line_buf[line_buf.size() - 1] = '\0';
-
-		// Read pid
-		int pid = 0;
+		// Parse PID
 		char *endptr = nullptr;
-		pid = static_cast<int>(strtol(line, &endptr, 10));
-		if (endptr == line || endptr >= line_end || *endptr == '\0') {
-			continue;
+		int pid = static_cast<int>(strtol(line, &endptr, 10));
+		if (endptr == line) {
+			continue; // failed to parse PID
 		}
-		line = endptr;
+		line = endptr; // advance cursor past PID
 
-		// Skip whitespace and find opening paren of comm field
-		while (line < line_end && *line != '\0' && (*line == ' ' || *line == '\t')) {
+		// Skip whitespace before '(' of comm field
+		while (*line == ' ' || *line == '\t') {
 			line++;
 		}
-		if (line >= line_end || *line == '\0' || *line != '(') {
+		if (*line != '(') {
 			continue;
 		}
-		line++; // Skip opening paren
-		if (line >= line_end || *line == '\0') {
-			continue;
-		}
+		line++; // skip '('
 
-		// Find closing paren of comm field (strrchr searches until null terminator)
+		// Find the closing ')' of comm (process name field)
 		char *comm_end = strrchr(line, ')');
-		if (!comm_end || comm_end < line || comm_end >= line_end) {
-			continue;
-		}
-		char saved_char = *comm_end;
-		*comm_end = '\0'; // Temporarily null-terminate for parsing
-		line = comm_end + 1;
-		if (line >= line_end || *line == '\0') {
-			*comm_end = saved_char; // Restore before continue
-			continue;
+		if (!comm_end) {
+			continue; // malformed /proc entry
 		}
 
-		// Skip whitespace after comm field
-		while (line < line_end && *line != '\0' && (*line == ' ' || *line == '\t')) {
+		// Extract comm if needed, move cursor past ')'.
+		line = comm_end + 1;
+
+		// Skip whitespace after comm
+		while (*line == ' ' || *line == '\t') {
 			line++;
 		}
-		if (line >= line_end || *line == '\0') {
-			*comm_end = saved_char; // Restore before continue
+		if (*line == '\0') {
 			continue;
 		}
-		// Restore the character we overwrote (though we don't need it anymore)
-		*comm_end = saved_char;
 
-		// Now parse: state ppid pgrp session tty_nr tpgid flags minflt cminflt majflt cmajflt
-		//           utime stime cutime cstime priority nice num_threads ...
+		// Parse fields after comm
 		char state = '\0';
 		int ppid = 0, pgrp = 0, session = 0, tty_nr = 0, tpgid = 0;
 		unsigned long flags = 0, minflt = 0, cminflt = 0, majflt = 0, cmajflt = 0;
-		unsigned long utime = 0, stime = 0, cutime = 0, cstime = 0;
+		unsigned long utime = 0, stime = 0, cutime = 0, cstime = 0, threads = 0;
 		long priority = 0, nice = 0;
-		unsigned long threads = 0;
 
-		int scanned = sscanf(line, "%c %d %d %d %d %d %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %ld %ld %lu", &state,
-		                     &ppid, &pgrp, &session, &tty_nr, &tpgid, &flags, &minflt, &cminflt, &majflt, &cmajflt,
-		                     &utime, &stime, &cutime, &cstime, &priority, &nice, &threads);
-		if (scanned < 19) {
-			continue;
+		int scanned = sscanf(line,
+		                     "%c %d %d %d %d %d %lu %lu %lu %lu %lu "
+		                     "%lu %lu %lu %lu %ld %ld %lu",
+		                     &state, &ppid, &pgrp, &session, &tty_nr, &tpgid, &flags, &minflt, &cminflt, &majflt,
+		                     &cmajflt, &utime, &stime, &cutime, &cstime, &priority, &nice, &threads);
+		if (scanned < 18) {
+			continue; // incomplete record
 		}
 
-		if (state == 'R') {
-			running_processes++;
-		} else if (state == 'S' || state == 'D') {
-			sleeping_processes++;
-		} else if (state == 'T') {
-			stopped_processes++;
-		} else if (state == 'Z') {
-			zombie_processes++;
+		// Count processes by state
+		switch (state) {
+		case 'R':
+			status.running_processes++;
+			break;
+		case 'S':
+		case 'D':
+			status.sleeping_processes++;
+			break;
+		case 'T':
+			status.stopped_processes++;
+			break;
+		case 'Z':
+			status.zombie_processes++;
+			break;
 		}
 
-		total_threads += threads;
+		status.total_threads += threads;
 	}
 
-	return true;
+	return status;
 }
 
 OSInfo GetOSInfoLinux() {
@@ -253,7 +248,7 @@ OSInfo GetOSInfoLinux() {
 	}
 
 	// Get hostname
-	std::array<char, 256> hostname_buf;
+	std::array<char, 256> hostname_buf {};
 	if (gethostname(hostname_buf.data(), hostname_buf.size()) == 0) {
 		info.host_name = hostname_buf.data();
 	}
@@ -275,10 +270,9 @@ OSInfo GetOSInfoLinux() {
 	}
 
 	// Read process status
-	int32_t running = 0, sleeping = 0, stopped = 0, zombie = 0;
-	if (ReadProcessStatus(info.process_count, running, sleeping, stopped, zombie, info.thread_count)) {
-		// process_count already set
-	}
+	ProcessStatus proc_status = ReadProcessStatus();
+	info.process_count = proc_status.active_processes;
+	info.thread_count = proc_status.total_threads;
 
 	// Get uptime
 	struct sysinfo s_info;

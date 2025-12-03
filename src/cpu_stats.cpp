@@ -28,15 +28,10 @@ string GetByteOrder() {
 		uint32_t i;
 		char c[4];
 	} test = {0x01020304};
-
-	if (test.c[0] == 1) {
-		return "Big Endian";
-	} else {
-		return "Little Endian";
-	}
+	return test.c[0] == 1 ? "Big Endian" : "Little Endian";
 }
 
-// Read CPU cache size from sysfs.
+// Read CPU cache size from sysfs in KiB.
 // Example content: "32K", "256K", etc.
 int32_t ReadCPUCacheSize(const char *path) {
 	std::ifstream file(path);
