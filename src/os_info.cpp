@@ -14,6 +14,7 @@
 #include <cstring>
 #include <dirent.h>
 #include <fstream>
+#include <string_view>
 #include <sys/sysinfo.h>
 #include <sys/utsname.h>
 #include <unistd.h>
@@ -35,24 +36,28 @@ namespace duckdb {
 namespace {
 
 #ifdef __linux__
-// Read OS name from /etc/os-release
-bool ReadOSName(string &os_name) {
+// Read OS name from /etc/os-release; return empty string if not found.
+string ReadOSName() {
+	// Key-value pair example: PRETTY_NAME="Debian GNU/Linux 13 (trixie)"
+	static constexpr std::string_view OS_NAME_PREFIX = "PRETTY_NAME=";
+
 	std::ifstream os_file("/etc/os-release");
 	if (!os_file.is_open()) {
-		return false;
+		return "";
 	}
 
 	string line;
 	while (std::getline(os_file, line)) {
-		if (line.find("PRETTY_NAME=") != string::npos) {
-			size_t pos = line.find("PRETTY_NAME=");
-			string value = line.substr(pos + 12);
-			os_name = RemoveQuotes(TrimString(value));
-			return true;
+		size_t pos = line.find(OS_NAME_PREFIX);
+		if (pos != string::npos) {
+			std::string_view line_sv {line};
+			std::string_view value_sv = line_sv.substr(pos + OS_NAME_PREFIX.length());
+			std::string_view os_name = RemoveQuotes(TrimString(value_sv));
+			return string {os_name};
 		}
 	}
 
-	return false;
+	return "";
 }
 
 // Read handle count from /proc/sys/fs/file-nr
@@ -254,7 +259,8 @@ OSInfo GetOSInfoLinux() {
 	}
 
 	// Read OS name from /etc/os-release
-	if (!ReadOSName(info.name)) {
+	info.name = ReadOSName();
+	if (info.name.empty()) {
 		// Fallback to sysname from uname
 		if (uname(&uts) == 0) {
 			info.name = uts.sysname;

@@ -1,13 +1,13 @@
 #pragma once
 
-#include "duckdb/common/string.hpp"
+#include <string_view>
 
 namespace duckdb {
 
 // Trim whitespace from both ends of a string
-string TrimString(const string &str);
+std::string_view TrimString(std::string_view str);
 
 // Remove quotes from a string (after trimming)
-string RemoveQuotes(const string &str);
+std::string_view RemoveQuotes(std::string_view str);
 
 } // namespace duckdb

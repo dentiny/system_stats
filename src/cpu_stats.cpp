@@ -100,8 +100,9 @@ CPUInfo GetCPUInfoLinux() {
 			continue;
 		}
 
-		string key = TrimString(line.substr(0, colon_pos));
-		string value = TrimString(line.substr(colon_pos + 1));
+		std::string_view line_sv {line};
+		std::string_view key = TrimString(line_sv.substr(0, colon_pos));
+		std::string_view value = TrimString(line_sv.substr(colon_pos + 1));
 
 		if (key == "model name") {
 			info.model_name = value;
@@ -119,7 +120,7 @@ CPUInfo GetCPUInfoLinux() {
 		if (key == "physical id") {
 			// Count unique physical processors
 			try {
-				int phys_id = std::stoi(value);
+				int phys_id = std::stoi(string {value});
 				if (phys_id + 1 > info.physical_cpus) {
 					info.physical_cpus = phys_id + 1;
 				}
