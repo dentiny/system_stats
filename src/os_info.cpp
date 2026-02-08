@@ -154,7 +154,7 @@ ProcessStatus ReadProcessStatus() {
 			continue;
 		}
 		status.active_processes++;
-		std::string stat_path = StringUtil::Format("/proc/%s/stat", ent->d_name);
+		string stat_path = StringUtil::Format("/proc/%s/stat", ent->d_name);
 		FILE *stat_file = fopen(stat_path.c_str(), "r");
 		if (!stat_file) {
 			continue;

@@ -5,6 +5,8 @@
 #include "duckdb/common/vector.hpp"
 
 namespace duckdb {
+
+// Forward declaration.
 class ClientContext;
 
 struct DiskInfo {
@@ -17,6 +19,6 @@ struct DiskInfo {
 };
 
 // Get disk information for the current platform
-std::vector<DiskInfo> GetDiskInfo(ClientContext &context);
+vector<DiskInfo> GetDiskInfo(ClientContext &context);
 
 } // namespace duckdb

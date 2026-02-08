@@ -53,8 +53,8 @@ bool IgnoreMountPoint(const string &mount_point) {
 
 #ifdef __linux__
 
-std::vector<DiskInfo> GetDiskInfoLinux(ClientContext &context) {
-	std::vector<DiskInfo> disks;
+vector<DiskInfo> GetDiskInfoLinux(ClientContext &context) {
+	vector<DiskInfo> disks;
 
 	FILE *fp = setmntent("/etc/mtab", "r");
 	if (!fp) {
@@ -111,8 +111,8 @@ std::vector<DiskInfo> GetDiskInfoLinux(ClientContext &context) {
 #endif
 
 #ifdef __APPLE__
-std::vector<DiskInfo> GetDiskInfoMacOS(ClientContext &context) {
-	std::vector<DiskInfo> disks;
+vector<DiskInfo> GetDiskInfoMacOS(ClientContext &context) {
+	vector<DiskInfo> disks;
 
 	struct statfs *mntbuf;
 	int count = getmntinfo(&mntbuf, MNT_NOWAIT);
@@ -162,7 +162,7 @@ std::vector<DiskInfo> GetDiskInfoMacOS(ClientContext &context) {
 
 } // namespace
 
-std::vector<DiskInfo> GetDiskInfo(ClientContext &context) {
+vector<DiskInfo> GetDiskInfo(ClientContext &context) {
 #ifdef __linux__
 	return GetDiskInfoLinux(context);
 #elif __APPLE__

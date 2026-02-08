@@ -4,6 +4,8 @@
 #include "duckdb/common/types.hpp"
 
 namespace duckdb {
+
+// Forward declaration.
 class ClientContext;
 
 struct CPUInfo {

@@ -31,7 +31,7 @@ struct SysDiskInfoData : public GlobalTableFunctionState {
 	}
 	bool finished;
 	size_t current_index;
-	std::vector<DiskInfo> disks;
+	vector<DiskInfo> disks;
 };
 
 unique_ptr<FunctionData> SysDiskInfoBind(ClientContext &context, TableFunctionBindInput &input,

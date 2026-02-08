@@ -5,11 +5,13 @@
 #include "duckdb/common/types.hpp"
 
 namespace duckdb {
+
+// Forward declaration.
 class ClientContext;
 
 struct NetworkInfo {
-	std::string interface_name;
-	std::string ipv4_address;
+	string interface_name;
+	string ipv4_address;
 	uint64_t tx_bytes = 0;
 	uint64_t tx_packets = 0;
 	uint64_t tx_errors = 0;
