@@ -42,7 +42,7 @@ string GetByteOrder() {
 int32_t ReadCPUCacheSize(ClientContext &context, const char *path) {
 	std::ifstream file(path);
 	if (!file.is_open()) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "Failed to open %s: %s", path, strerror(errno));
 		}
 		return 0;
@@ -69,7 +69,7 @@ CPUInfo GetCPUInfoLinux(ClientContext &context) {
 
 	struct utsname uts;
 	if (uname(&uts) != 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "uname() failed: %s", strerror(errno));
 		}
 	} else {
@@ -88,7 +88,7 @@ CPUInfo GetCPUInfoLinux(ClientContext &context) {
 	// Parse /proc/cpuinfo
 	std::ifstream cpuinfo("/proc/cpuinfo");
 	if (!cpuinfo.is_open()) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "Failed to open /proc/cpuinfo: %s", strerror(errno));
 		}
 		return info;
@@ -211,12 +211,12 @@ CPUInfo GetCPUInfoMacOS(ClientContext &context) {
 	size_t len = sizeof(count);
 
 	if (sysctl(mib.data(), 2, &count, &len, NULL, 0) != 0 || count < 1) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get available CPUs, trying HW_NCPU: %s", strerror(errno));
 		}
 		mib[1] = HW_NCPU;
 		if (sysctl(mib.data(), 2, &count, &len, NULL, 0) != 0) {
-			if (auto *db = GetDbInstance(context)) {
+			if (auto db = GetDbInstance(context)) {
 				DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get CPU count: %s", strerror(errno));
 			}
 		}
@@ -272,7 +272,7 @@ CPUInfo GetCPUInfoMacOS(ClientContext &context) {
 	// Machine architecture
 	str_size = sizeof(str_val);
 	if (sysctlbyname("hw.machine", str_val, &str_size, 0, 0) != 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctlbyname() failed to get machine architecture: %s", strerror(errno));
 		}
 	} else {

@@ -59,7 +59,7 @@ string ReadOSName(ClientContext &context) {
 
 	std::ifstream os_file("/etc/os-release");
 	if (!os_file.is_open()) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "Failed to open /etc/os-release: %s", strerror(errno));
 		}
 		return "";
@@ -83,7 +83,7 @@ string ReadOSName(ClientContext &context) {
 int32_t ReadHandleCount(ClientContext &context) {
 	std::ifstream file("/proc/sys/fs/file-nr");
 	if (!file.is_open()) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "Failed to open /proc/sys/fs/file-nr: %s", strerror(errno));
 		}
 		return 0;
@@ -253,7 +253,7 @@ OSInfo GetOSInfoLinux(ClientContext &context) {
 
 	struct utsname uts;
 	if (uname(&uts) != 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "uname() failed: %s", strerror(errno));
 		}
 	} else {
@@ -264,7 +264,7 @@ OSInfo GetOSInfoLinux(ClientContext &context) {
 	// Get hostname
 	std::array<char, 256> hostname_buf {};
 	if (gethostname(hostname_buf.data(), hostname_buf.size()) != 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "gethostname() failed: %s", strerror(errno));
 		}
 	} else {
@@ -295,7 +295,7 @@ OSInfo GetOSInfoLinux(ClientContext &context) {
 	// Get uptime
 	struct sysinfo s_info;
 	if (sysinfo(&s_info) != 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysinfo() failed: %s", strerror(errno));
 		}
 	} else {
@@ -310,7 +310,7 @@ int32_t GetThreadCountMacOS(ClientContext &context) {
 	std::array<int, 4> mib = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
 	size_t len = 0;
 	if (sysctl(mib.data(), mib.size(), nullptr, &len, nullptr, 0) != 0 || len == 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get process list size: %s", strerror(errno));
 		}
 		return 0;
@@ -318,7 +318,7 @@ int32_t GetThreadCountMacOS(ClientContext &context) {
 
 	char *buf = static_cast<char *>(malloc(len));
 	if (buf == nullptr) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "malloc() failed to allocate %zu bytes for process list", len);
 		}
 		return 0;
@@ -329,7 +329,7 @@ int32_t GetThreadCountMacOS(ClientContext &context) {
 	};
 
 	if (sysctl(mib.data(), mib.size(), buf, &len, nullptr, 0) != 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get process list: %s", strerror(errno));
 		}
 		return 0;
@@ -356,7 +356,7 @@ int32_t GetHandleCountMacOS(ClientContext &context) {
 	std::array<int, 4> mib = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
 	size_t len = 0;
 	if (sysctl(mib.data(), mib.size(), nullptr, &len, nullptr, 0) != 0 || len == 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get process list size: %s", strerror(errno));
 		}
 		return 0;
@@ -364,7 +364,7 @@ int32_t GetHandleCountMacOS(ClientContext &context) {
 
 	char *buf = static_cast<char *>(malloc(len));
 	if (buf == nullptr) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "malloc() failed to allocate %zu bytes for process list", len);
 		}
 		return 0;
@@ -375,7 +375,7 @@ int32_t GetHandleCountMacOS(ClientContext &context) {
 	};
 
 	if (sysctl(mib.data(), mib.size(), buf, &len, nullptr, 0) != 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get process list: %s", strerror(errno));
 		}
 		return 0;
@@ -401,7 +401,7 @@ OSInfo GetOSInfoMacOS(ClientContext &context) {
 
 	struct utsname uts;
 	if (uname(&uts) != 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "uname() failed: %s", strerror(errno));
 		}
 	} else {
@@ -413,7 +413,7 @@ OSInfo GetOSInfoMacOS(ClientContext &context) {
 	// Get hostname
 	std::array<char, 256> hostname_buf;
 	if (gethostname(hostname_buf.data(), hostname_buf.size()) != 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "gethostname() failed: %s", strerror(errno));
 		}
 	} else {
@@ -424,7 +424,7 @@ OSInfo GetOSInfoMacOS(ClientContext &context) {
 	std::array<int, 4> mib = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
 	size_t len = 0;
 	if (sysctl(mib.data(), mib.size(), nullptr, &len, nullptr, 0) != 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get process count: %s", strerror(errno));
 		}
 	} else if (len > 0) {
@@ -440,7 +440,7 @@ OSInfo GetOSInfoMacOS(ClientContext &context) {
 	// Get uptime using clock_gettime
 	struct timespec uptime;
 	if (clock_gettime(CLOCK_MONOTONIC_RAW, &uptime) != 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "clock_gettime() failed: %s", strerror(errno));
 		}
 	} else {

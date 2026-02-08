@@ -45,7 +45,7 @@ uint64_t ReadSysNetValue(ClientContext &context, const string &interface, const 
 	string file_path = StringUtil::Format("/sys/class/net/%s/statistics/%s", interface, stat_name);
 	std::ifstream file(file_path);
 	if (!file.is_open()) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "Failed to open %s: %s", file_path.c_str(), strerror(errno));
 		}
 		return 0;
@@ -60,7 +60,7 @@ uint64_t ReadSpeedMbps(ClientContext &context, const string &interface) {
 	string file_path = StringUtil::Format("/sys/class/net/%s/speed", interface);
 	std::ifstream file(file_path);
 	if (!file.is_open()) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "Failed to open %s: %s", file_path.c_str(), strerror(errno));
 		}
 		return 0;
@@ -76,7 +76,7 @@ vector<NetworkInfo> GetNetworkInfoLinux(ClientContext &context) {
 	struct ifaddrs *ifa;
 
 	if (getifaddrs(&ifaddr) == -1) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "getifaddrs() failed: %s", strerror(errno));
 		}
 		return networks;
@@ -105,7 +105,7 @@ vector<NetworkInfo> GetNetworkInfoLinux(ClientContext &context) {
 		int ret =
 		    getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host.data(), NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
 		if (ret != 0) {
-			if (auto *db = GetDbInstance(context)) {
+			if (auto db = GetDbInstance(context)) {
 				DUCKDB_LOG_DEBUG(*db, "getnameinfo() failed for interface %s: %s", info.interface_name.c_str(),
 				                 gai_strerror(ret));
 			}
@@ -140,7 +140,7 @@ vector<NetworkInfo> GetNetworkInfoMacOS(ClientContext &context) {
 	size_t len = 0;
 
 	if (sysctl(desc.data(), 6, NULL, &len, NULL, 0) < 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get network interface list size: %s", strerror(errno));
 		}
 		return networks;
@@ -148,7 +148,7 @@ vector<NetworkInfo> GetNetworkInfoMacOS(ClientContext &context) {
 
 	char *buf = static_cast<char *>(malloc(len));
 	if (buf == NULL) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "malloc() failed to allocate %zu bytes for network interface list", len);
 		}
 		return networks;
@@ -159,7 +159,7 @@ vector<NetworkInfo> GetNetworkInfoMacOS(ClientContext &context) {
 	};
 
 	if (sysctl(desc.data(), 6, buf, &len, NULL, 0) < 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get network interface list: %s", strerror(errno));
 		}
 		return networks;
@@ -168,7 +168,7 @@ vector<NetworkInfo> GetNetworkInfoMacOS(ClientContext &context) {
 	// Get interface addresses using getifaddrs
 	struct ifaddrs *ifaddr;
 	if (getifaddrs(&ifaddr) == -1) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "getifaddrs() failed: %s", strerror(errno));
 		}
 		return networks;
@@ -216,7 +216,7 @@ vector<NetworkInfo> GetNetworkInfoMacOS(ClientContext &context) {
 			int ret = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host.data(), NI_MAXHOST, NULL, 0,
 			                      NI_NUMERICHOST);
 			if (ret != 0) {
-				if (auto *db = GetDbInstance(context)) {
+				if (auto db = GetDbInstance(context)) {
 					DUCKDB_LOG_DEBUG(*db, "getnameinfo() failed for interface %s: %s", info.interface_name.c_str(),
 					                 gai_strerror(ret));
 				}

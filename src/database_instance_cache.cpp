@@ -1,10 +1,11 @@
 #include "database_instance_cache.hpp"
 #include "duckdb/storage/object_cache.hpp"
+#include "duckdb/main/client_context.hpp"
 
 namespace duckdb {
 
-DatabaseInstance *GetDbInstance(ClientContext &context) {
-	auto &cache = ObjectCache::GetObjectCache(context);
+shared_ptr<DatabaseInstance> GetDbInstance(ClientContext &context) {
+	auto &cache = context.db->GetObjectCache();
 	auto entry = cache.Get<DatabaseInstanceCacheEntry>("system_stats_db_instance");
 	if (!entry) {
 		return nullptr;

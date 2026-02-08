@@ -64,7 +64,7 @@ std::vector<DiskInfo> GetDiskInfoLinux(ClientContext &context) {
 	}
 
 	if (!fp) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "Failed to open /etc/mtab and /proc/mounts: %s", strerror(errno));
 		}
 		return disks;
@@ -84,7 +84,7 @@ std::vector<DiskInfo> GetDiskInfoLinux(ClientContext &context) {
 
 		memset(&buf, 0, sizeof(buf));
 		if (statvfs(mount_point.c_str(), &buf) != 0) {
-			if (auto *db = GetDbInstance(context)) {
+			if (auto db = GetDbInstance(context)) {
 				DUCKDB_LOG_DEBUG(*db, "statvfs() failed for %s: %s", mount_point.c_str(), strerror(errno));
 			}
 			continue;
@@ -118,7 +118,7 @@ std::vector<DiskInfo> GetDiskInfoMacOS(ClientContext &context) {
 	struct statfs *mntbuf;
 	int count = getmntinfo(&mntbuf, MNT_NOWAIT);
 	if (count <= 0) {
-		if (auto *db = GetDbInstance(context)) {
+		if (auto db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "getmntinfo() failed: %s", strerror(errno));
 		}
 		return disks;
@@ -135,7 +135,7 @@ std::vector<DiskInfo> GetDiskInfoMacOS(ClientContext &context) {
 
 		struct statvfs buf;
 		if (statvfs(mount_point.c_str(), &buf) != 0) {
-			if (auto *db = GetDbInstance(context)) {
+			if (auto db = GetDbInstance(context)) {
 				DUCKDB_LOG_DEBUG(*db, "statvfs() failed for %s: %s", mount_point.c_str(), strerror(errno));
 			}
 			continue;

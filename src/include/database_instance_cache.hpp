@@ -6,13 +6,12 @@
 
 namespace duckdb {
 
-// ObjectCacheEntry that stores a pointer to DatabaseInstance
+// ObjectCacheEntry that stores a weak pointer to DatabaseInstance
 // This allows per-database access to the DatabaseInstance for logging
-// Note: DatabaseInstance lifetime is managed by DuckDB, so we store a raw pointer
-// The ObjectCache itself is per-DatabaseInstance, so this is safe
+// Using weak_ptr prevents circular references while allowing safe access
 class DatabaseInstanceCacheEntry : public ObjectCacheEntry {
 public:
-	explicit DatabaseInstanceCacheEntry(DatabaseInstance &db) : db_ptr(&db) {
+	explicit DatabaseInstanceCacheEntry(shared_ptr<DatabaseInstance> db) : db_weak(db) {
 	}
 
 	static string ObjectType() {
@@ -23,17 +22,18 @@ public:
 		return ObjectType();
 	}
 
-	// Get the DatabaseInstance pointer
-	DatabaseInstance *GetDbInstance() {
-		return db_ptr;
+	// Get the DatabaseInstance shared pointer
+	// Returns nullptr if the DatabaseInstance has been destroyed
+	shared_ptr<DatabaseInstance> GetDbInstance() {
+		return db_weak.lock();
 	}
 
 private:
-	DatabaseInstance *db_ptr;
+	weak_ptr<DatabaseInstance> db_weak;
 };
 
 // Utility function to get DatabaseInstance from ObjectCache using ClientContext
-// Returns nullptr if not found
-DatabaseInstance *GetDbInstance(ClientContext &context);
+// Returns nullptr if not found or if DatabaseInstance has been destroyed
+shared_ptr<DatabaseInstance> GetDbInstance(ClientContext &context);
 
 } // namespace duckdb

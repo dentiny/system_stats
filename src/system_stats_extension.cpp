@@ -18,8 +18,9 @@ namespace {
 void LoadInternal(ExtensionLoader &loader) {
 	// Store DatabaseInstance in ObjectCache for per-database access
 	auto &db = loader.GetDatabaseInstance();
+	auto db_shared = db.shared_from_this();
 	auto &cache = db.GetObjectCache();
-	auto entry = make_shared_ptr<DatabaseInstanceCacheEntry>(db);
+	auto entry = make_shared_ptr<DatabaseInstanceCacheEntry>(db_shared);
 	cache.Put("system_stats_db_instance", entry);
 
 	RegisterSysMemoryInfoFunction(loader);
