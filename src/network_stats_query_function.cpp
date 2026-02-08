@@ -58,7 +58,7 @@ unique_ptr<FunctionData> SysNetworkInfoBind(ClientContext &context, TableFunctio
 	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
 
 	names.emplace_back("link_speed_mbps");
-	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
 
 	return nullptr;
 }
@@ -113,7 +113,7 @@ void SysNetworkInfoFunc(ClientContext &context, TableFunctionInput &data_p, Data
 		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.rx_dropped));
 
 		// link_speed_mbps
-		output.SetValue(col_idx++, output_count, Value::INTEGER(static_cast<int32_t>(info.speed_mbps)));
+		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.speed_mbps));
 
 		data.current_index++;
 		output_count++;

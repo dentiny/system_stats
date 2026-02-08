@@ -3,6 +3,7 @@
 #include "memory_stats.hpp"
 
 #include "duckdb/common/exception.hpp"
+#include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/string.hpp"
 
 #ifdef __linux__
@@ -104,7 +105,7 @@ MemoryInfo GetMemoryInfoMacOS() {
 	int pagesize = getpagesize();
 
 	// Free memory includes inactive pages
-	info.free_memory = static_cast<uint64_t>(vm_stats.inactive_count + vm_stats.free_count) * pagesize;
+	info.free_memory = UnsafeNumericCast<uint64_t>(vm_stats.inactive_count + vm_stats.free_count) * pagesize;
 	info.used_memory = info.total_memory - info.free_memory;
 
 	// Get swap usage

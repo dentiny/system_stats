@@ -1,6 +1,8 @@
 #include "os_info.hpp"
 
 #include "duckdb/common/exception.hpp"
+#include "duckdb/common/limits.hpp"
+#include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "scope_guard.hpp"
@@ -78,8 +80,6 @@ int32_t ReadHandleCount() {
 	}
 
 	int allocated = 0;
-	int unallocated = 0;
-	int max_handles = 0;
 	file >> allocated;
 	if (file.fail()) {
 		return 0;
@@ -162,16 +162,16 @@ ProcessStatus ReadProcessStatus() {
 
 		// `line` is our parsing cursor into the stat line; we advance it as we consume fields.
 		// Example: [pid] [comm] [state] [ppid] ...
-		// After strtol(line, ...) `line` moves past the PID, then we continue parsing from there.
+		// Skip the PID field by finding the first space
 		char *line = line_buf.data();
 
-		// Parse PID
-		char *endptr = nullptr;
-		int pid = static_cast<int>(strtol(line, &endptr, 10));
-		if (endptr == line) {
-			continue; // failed to parse PID
+		// Skip PID (first field) - find first space
+		while (*line != '\0' && *line != ' ' && *line != '\t') {
+			line++;
 		}
-		line = endptr; // advance cursor past PID
+		if (*line == '\0') {
+			continue; // malformed line
+		}
 
 		// Skip whitespace before '(' of comm field
 		while (*line == ' ' || *line == '\t') {
@@ -277,7 +277,12 @@ OSInfo GetOSInfoLinux() {
 	// Get uptime
 	struct sysinfo s_info;
 	if (sysinfo(&s_info) == 0) {
-		info.os_up_since_seconds = static_cast<int32_t>(s_info.uptime);
+		// Clamp to int32_t range (uptime in seconds should be reasonable)
+		if (s_info.uptime > static_cast<long>(NumericLimits<int32_t>::Maximum())) {
+			info.os_up_since_seconds = NumericLimits<int32_t>::Maximum();
+		} else {
+			info.os_up_since_seconds = UnsafeNumericCast<int32_t>(s_info.uptime);
+		}
 	}
 
 	return info;
@@ -376,7 +381,7 @@ OSInfo GetOSInfoMacOS() {
 	std::array<int, 4> mib = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
 	size_t len = 0;
 	if (sysctl(mib.data(), mib.size(), nullptr, &len, nullptr, 0) == 0 && len > 0) {
-		info.process_count = static_cast<int32_t>(len / sizeof(struct kinfo_proc));
+		info.process_count = NumericCast<int32_t>(len / sizeof(struct kinfo_proc));
 	}
 
 	// Get thread count by summing threads from all processes
@@ -388,7 +393,12 @@ OSInfo GetOSInfoMacOS() {
 	// Get uptime using clock_gettime
 	struct timespec uptime;
 	if (clock_gettime(CLOCK_MONOTONIC_RAW, &uptime) == 0) {
-		info.os_up_since_seconds = static_cast<int32_t>(uptime.tv_sec);
+		// Clamp to int32_t range (uptime in seconds should be reasonable)
+		if (uptime.tv_sec > static_cast<time_t>(NumericLimits<int32_t>::Maximum())) {
+			info.os_up_since_seconds = NumericLimits<int32_t>::Maximum();
+		} else {
+			info.os_up_since_seconds = UnsafeNumericCast<int32_t>(uptime.tv_sec);
+		}
 	}
 
 	return info;

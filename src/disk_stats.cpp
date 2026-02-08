@@ -6,6 +6,7 @@
 #include <regex>
 
 #include "duckdb/common/exception.hpp"
+#include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/common/types.hpp"
@@ -78,7 +79,7 @@ std::vector<DiskInfo> GetDiskInfoLinux() {
 			continue;
 		}
 
-		uint64_t total_space = static_cast<uint64_t>(buf.f_blocks * buf.f_bsize);
+		uint64_t total_space = UnsafeNumericCast<uint64_t>(buf.f_blocks * buf.f_bsize);
 		if (total_space == 0) {
 			continue;
 		}
@@ -88,8 +89,8 @@ std::vector<DiskInfo> GetDiskInfoLinux() {
 		info.file_system = ent->mnt_fsname;
 		info.file_system_type = fs_type;
 		info.total_space = total_space;
-		info.used_space = static_cast<uint64_t>((buf.f_blocks - buf.f_bfree) * buf.f_bsize);
-		info.free_space = static_cast<uint64_t>(buf.f_bavail * buf.f_bsize);
+		info.used_space = UnsafeNumericCast<uint64_t>((buf.f_blocks - buf.f_bfree) * buf.f_bsize);
+		info.free_space = UnsafeNumericCast<uint64_t>(buf.f_bavail * buf.f_bsize);
 
 		disks.emplace_back(info);
 	}
@@ -123,7 +124,7 @@ std::vector<DiskInfo> GetDiskInfoMacOS() {
 			continue;
 		}
 
-		uint64_t total_space = static_cast<uint64_t>(buf.f_blocks * buf.f_bsize);
+		uint64_t total_space = UnsafeNumericCast<uint64_t>(buf.f_blocks * buf.f_bsize);
 		if (total_space == 0) {
 			continue;
 		}
@@ -133,8 +134,8 @@ std::vector<DiskInfo> GetDiskInfoMacOS() {
 		info.file_system = mntbuf[idx].f_mntfromname;
 		info.file_system_type = fs_type;
 		info.total_space = total_space;
-		info.used_space = static_cast<uint64_t>((buf.f_blocks - buf.f_bfree) * buf.f_bsize);
-		info.free_space = static_cast<uint64_t>(buf.f_bavail * buf.f_bsize);
+		info.used_space = UnsafeNumericCast<uint64_t>((buf.f_blocks - buf.f_bfree) * buf.f_bsize);
+		info.free_space = UnsafeNumericCast<uint64_t>(buf.f_bavail * buf.f_bsize);
 
 		disks.emplace_back(info);
 	}
