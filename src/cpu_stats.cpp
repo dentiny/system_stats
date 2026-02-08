@@ -3,7 +3,9 @@
 #include "cpu_stats.hpp"
 
 #include "database_instance_cache.hpp"
+#include "duckdb/common/array.hpp"
 #include "duckdb/common/exception.hpp"
+#include "duckdb/common/fstream.hpp"
 #include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/operator/integer_cast_operator.hpp"
 #include "duckdb/common/string.hpp"
@@ -13,11 +15,8 @@
 #include "string_utils.hpp"
 
 #ifdef __linux__
-#include <fstream>
-#include <sstream>
 #include <sys/utsname.h>
 #elif __APPLE__
-#include <array>
 #include <cerrno>
 #include <sys/sysctl.h>
 #include <sys/types.h>

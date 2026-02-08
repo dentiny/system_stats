@@ -1,7 +1,9 @@
 #include "os_info.hpp"
 
 #include "database_instance_cache.hpp"
+#include "duckdb/common/array.hpp"
 #include "duckdb/common/exception.hpp"
+#include "duckdb/common/fstream.hpp"
 #include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/string_util.hpp"
@@ -11,20 +13,16 @@
 #include "string_utils.hpp"
 
 #ifdef __linux__
-#include <array>
 #include <cerrno>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <dirent.h>
-#include <fstream>
-#include <string_view>
 #include <sys/sysinfo.h>
 #include <sys/utsname.h>
 #include <unistd.h>
 #elif __APPLE__
-#include <array>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>

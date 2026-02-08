@@ -1,8 +1,8 @@
 #pragma once
 
-#include "duckdb/storage/object_cache.hpp"
-#include "duckdb/main/database.hpp"
 #include "duckdb/common/shared_ptr.hpp"
+#include "duckdb/main/database.hpp"
+#include "duckdb/storage/object_cache.hpp"
 
 namespace duckdb {
 

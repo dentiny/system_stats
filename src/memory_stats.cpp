@@ -1,16 +1,15 @@
 #include "memory_stats.hpp"
 
 #include "database_instance_cache.hpp"
+#include "duckdb/common/array.hpp"
 #include "duckdb/common/exception.hpp"
+#include "duckdb/common/fstream.hpp"
 #include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/string.hpp"
 #include "duckdb/logging/logger.hpp"
 
 #ifdef __linux__
-#include <fstream>
-#include <sstream>
 #elif __APPLE__
-#include <array>
 #include <cerrno>
 #include <mach/mach.h>
 #include <sys/sysctl.h>

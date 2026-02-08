@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstdint>
-#include <string>
+#include "duckdb/common/string.hpp"
 #include "duckdb/common/vector.hpp"
+#include "duckdb/common/types.hpp"
 
 namespace duckdb {
 class ClientContext;

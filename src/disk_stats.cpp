@@ -2,9 +2,6 @@
 
 #include "disk_stats.hpp"
 
-#include <cstring>
-#include <regex>
-
 #include "database_instance_cache.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/numeric_utils.hpp"
@@ -13,6 +10,8 @@
 #include "duckdb/common/types.hpp"
 #include "duckdb/logging/logger.hpp"
 #include "duckdb/main/client_context.hpp"
+#include <cstring>
+#include <regex>
 
 #ifdef __linux__
 #include <cerrno>
