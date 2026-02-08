@@ -1,8 +1,11 @@
 #pragma once
 
-#include <cstdint>
+#include "duckdb/common/types.hpp"
 
 namespace duckdb {
+
+// Forward declaration.
+class ClientContext;
 
 struct MemoryInfo {
 	uint64_t total_memory = 0;
@@ -15,6 +18,6 @@ struct MemoryInfo {
 };
 
 // Get memory information for the current platform
-MemoryInfo GetMemoryInfo();
+MemoryInfo GetMemoryInfo(ClientContext &context);
 
 } // namespace duckdb

@@ -2,19 +2,22 @@
 
 #include "cpu_stats.hpp"
 
+#include "database_instance_cache.hpp"
+#include "duckdb/common/array.hpp"
 #include "duckdb/common/exception.hpp"
+#include "duckdb/common/fstream.hpp"
 #include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/operator/integer_cast_operator.hpp"
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/string_util.hpp"
+#include "duckdb/logging/logger.hpp"
+#include "duckdb/main/client_context.hpp"
 #include "string_utils.hpp"
 
 #ifdef __linux__
-#include <fstream>
-#include <sstream>
 #include <sys/utsname.h>
 #elif __APPLE__
-#include <array>
+#include <cerrno>
 #include <sys/sysctl.h>
 #include <sys/types.h>
 #endif
@@ -35,9 +38,12 @@ string GetByteOrder() {
 
 // Read CPU cache size from sysfs in KiB.
 // Example content: "32K", "256K", etc.
-int32_t ReadCPUCacheSize(const char *path) {
+int32_t ReadCPUCacheSize(ClientContext &context, const char *path) {
 	std::ifstream file(path);
-	if (!file) {
+	if (!file.is_open()) {
+		if (auto db = GetDbInstance(context)) {
+			DUCKDB_LOG_DEBUG(*db, "Failed to open %s: %s", path, strerror(errno));
+		}
 		return 0;
 	}
 
@@ -57,11 +63,15 @@ int32_t ReadCPUCacheSize(const char *path) {
 	return 0;
 }
 
-CPUInfo GetCPUInfoLinux() {
+CPUInfo GetCPUInfoLinux(ClientContext &context) {
 	CPUInfo info;
 
 	struct utsname uts;
-	if (uname(&uts) == 0) {
+	if (uname(&uts) != 0) {
+		if (auto db = GetDbInstance(context)) {
+			DUCKDB_LOG_DEBUG(*db, "uname() failed: %s", strerror(errno));
+		}
+	} else {
 		info.architecture = uts.machine;
 	}
 
@@ -69,14 +79,17 @@ CPUInfo GetCPUInfoLinux() {
 	info.byte_order = GetByteOrder();
 
 	// Read cache sizes from sysfs.
-	info.l1d_cache_kb = ReadCPUCacheSize("/sys/devices/system/cpu/cpu0/cache/index0/size");
-	info.l1i_cache_kb = ReadCPUCacheSize("/sys/devices/system/cpu/cpu0/cache/index1/size");
-	info.l2_cache_kb = ReadCPUCacheSize("/sys/devices/system/cpu/cpu0/cache/index2/size");
-	info.l3_cache_kb = ReadCPUCacheSize("/sys/devices/system/cpu/cpu0/cache/index3/size");
+	info.l1d_cache_kb = ReadCPUCacheSize(context, "/sys/devices/system/cpu/cpu0/cache/index0/size");
+	info.l1i_cache_kb = ReadCPUCacheSize(context, "/sys/devices/system/cpu/cpu0/cache/index1/size");
+	info.l2_cache_kb = ReadCPUCacheSize(context, "/sys/devices/system/cpu/cpu0/cache/index2/size");
+	info.l3_cache_kb = ReadCPUCacheSize(context, "/sys/devices/system/cpu/cpu0/cache/index3/size");
 
 	// Parse /proc/cpuinfo
 	std::ifstream cpuinfo("/proc/cpuinfo");
-	if (!cpuinfo) {
+	if (!cpuinfo.is_open()) {
+		if (auto db = GetDbInstance(context)) {
+			DUCKDB_LOG_DEBUG(*db, "Failed to open /proc/cpuinfo: %s", strerror(errno));
+		}
 		return info;
 	}
 
@@ -188,7 +201,7 @@ string GetByteOrderMacOS() {
 	return "(Unknown)";
 }
 
-CPUInfo GetCPUInfoMacOS() {
+CPUInfo GetCPUInfoMacOS(ClientContext &context) {
 	CPUInfo info;
 
 	// Get number of available CPUs
@@ -197,8 +210,15 @@ CPUInfo GetCPUInfoMacOS() {
 	size_t len = sizeof(count);
 
 	if (sysctl(mib.data(), 2, &count, &len, NULL, 0) != 0 || count < 1) {
+		if (auto db = GetDbInstance(context)) {
+			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get available CPUs, trying HW_NCPU: %s", strerror(errno));
+		}
 		mib[1] = HW_NCPU;
-		sysctl(mib.data(), 2, &count, &len, NULL, 0);
+		if (sysctl(mib.data(), 2, &count, &len, NULL, 0) != 0) {
+			if (auto db = GetDbInstance(context)) {
+				DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get CPU count: %s", strerror(errno));
+			}
+		}
 		if (count < 1) {
 			count = 1;
 		}
@@ -250,7 +270,11 @@ CPUInfo GetCPUInfoMacOS() {
 
 	// Machine architecture
 	str_size = sizeof(str_val);
-	if (sysctlbyname("hw.machine", str_val, &str_size, 0, 0) == 0) {
+	if (sysctlbyname("hw.machine", str_val, &str_size, 0, 0) != 0) {
+		if (auto db = GetDbInstance(context)) {
+			DUCKDB_LOG_DEBUG(*db, "sysctlbyname() failed to get machine architecture: %s", strerror(errno));
+		}
+	} else {
 		info.architecture = str_val;
 	}
 
@@ -260,11 +284,11 @@ CPUInfo GetCPUInfoMacOS() {
 
 } // namespace
 
-CPUInfo GetCPUInfo() {
+CPUInfo GetCPUInfo(ClientContext &context) {
 #ifdef __linux__
-	return GetCPUInfoLinux();
+	return GetCPUInfoLinux(context);
 #elif __APPLE__
-	return GetCPUInfoMacOS();
+	return GetCPUInfoMacOS(context);
 #else
 	throw NotImplementedException("CPU statistics are not supported on this platform");
 #endif

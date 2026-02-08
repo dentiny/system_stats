@@ -1,23 +1,24 @@
 #pragma once
 
-#include <cstdint>
-#include <string>
+#include "duckdb/common/string.hpp"
+#include "duckdb/common/types.hpp"
 #include "duckdb/common/vector.hpp"
 
 namespace duckdb {
+class ClientContext;
 
 struct OSInfo {
-	std::string name;
-	std::string version;
-	std::string host_name;
+	string name;
+	string version;
+	string host_name;
 	int32_t handle_count = 0;
 	int32_t process_count = 0;
 	int32_t thread_count = 0;
-	std::string architecture;
+	string architecture;
 	uint64_t os_up_since_seconds = 0;
 };
 
 // Get OS information for the current platform
-OSInfo GetOSInfo();
+OSInfo GetOSInfo(ClientContext &context);
 
 } // namespace duckdb

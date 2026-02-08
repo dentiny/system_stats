@@ -1,10 +1,13 @@
 #pragma once
 
 #include "duckdb/common/string.hpp"
-#include <cstdint>
-#include <vector>
+#include "duckdb/common/types.hpp"
+#include "duckdb/common/vector.hpp"
 
 namespace duckdb {
+
+// Forward declaration.
+class ClientContext;
 
 struct DiskInfo {
 	string mount_point;
@@ -16,6 +19,6 @@ struct DiskInfo {
 };
 
 // Get disk information for the current platform
-std::vector<DiskInfo> GetDiskInfo();
+vector<DiskInfo> GetDiskInfo(ClientContext &context);
 
 } // namespace duckdb

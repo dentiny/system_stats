@@ -1,14 +1,17 @@
 #pragma once
 
-#include <cstdint>
-#include <string>
+#include "duckdb/common/string.hpp"
+#include "duckdb/common/types.hpp"
 #include "duckdb/common/vector.hpp"
 
 namespace duckdb {
 
+// Forward declaration.
+class ClientContext;
+
 struct NetworkInfo {
-	std::string interface_name;
-	std::string ipv4_address;
+	string interface_name;
+	string ipv4_address;
 	uint64_t tx_bytes = 0;
 	uint64_t tx_packets = 0;
 	uint64_t tx_errors = 0;
@@ -21,6 +24,6 @@ struct NetworkInfo {
 };
 
 // Get network information for the current platform
-vector<NetworkInfo> GetNetworkInfo();
+vector<NetworkInfo> GetNetworkInfo(ClientContext &context);
 
 } // namespace duckdb

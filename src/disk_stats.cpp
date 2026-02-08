@@ -2,19 +2,23 @@
 
 #include "disk_stats.hpp"
 
-#include <cstring>
-#include <regex>
-
+#include "database_instance_cache.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/common/types.hpp"
+#include "duckdb/logging/logger.hpp"
+#include "duckdb/main/client_context.hpp"
+#include <cstring>
+#include <regex>
 
 #ifdef __linux__
+#include <cerrno>
 #include <mntent.h>
 #include <sys/statvfs.h>
 #elif __APPLE__
+#include <cerrno>
 #include <sys/mount.h>
 #include <sys/statvfs.h>
 #endif
@@ -49,8 +53,8 @@ bool IgnoreMountPoint(const string &mount_point) {
 
 #ifdef __linux__
 
-std::vector<DiskInfo> GetDiskInfoLinux() {
-	std::vector<DiskInfo> disks;
+vector<DiskInfo> GetDiskInfoLinux(ClientContext &context) {
+	vector<DiskInfo> disks;
 
 	FILE *fp = setmntent("/etc/mtab", "r");
 	if (!fp) {
@@ -59,6 +63,9 @@ std::vector<DiskInfo> GetDiskInfoLinux() {
 	}
 
 	if (!fp) {
+		if (auto db = GetDbInstance(context)) {
+			DUCKDB_LOG_DEBUG(*db, "Failed to open /etc/mtab and /proc/mounts: %s", strerror(errno));
+		}
 		return disks;
 	}
 
@@ -76,6 +83,9 @@ std::vector<DiskInfo> GetDiskInfoLinux() {
 
 		memset(&buf, 0, sizeof(buf));
 		if (statvfs(mount_point.c_str(), &buf) != 0) {
+			if (auto db = GetDbInstance(context)) {
+				DUCKDB_LOG_DEBUG(*db, "statvfs() failed for %s: %s", mount_point.c_str(), strerror(errno));
+			}
 			continue;
 		}
 
@@ -101,12 +111,15 @@ std::vector<DiskInfo> GetDiskInfoLinux() {
 #endif
 
 #ifdef __APPLE__
-std::vector<DiskInfo> GetDiskInfoMacOS() {
-	std::vector<DiskInfo> disks;
+vector<DiskInfo> GetDiskInfoMacOS(ClientContext &context) {
+	vector<DiskInfo> disks;
 
 	struct statfs *mntbuf;
 	int count = getmntinfo(&mntbuf, MNT_NOWAIT);
 	if (count <= 0) {
+		if (auto db = GetDbInstance(context)) {
+			DUCKDB_LOG_DEBUG(*db, "getmntinfo() failed: %s", strerror(errno));
+		}
 		return disks;
 	}
 
@@ -121,6 +134,9 @@ std::vector<DiskInfo> GetDiskInfoMacOS() {
 
 		struct statvfs buf;
 		if (statvfs(mount_point.c_str(), &buf) != 0) {
+			if (auto db = GetDbInstance(context)) {
+				DUCKDB_LOG_DEBUG(*db, "statvfs() failed for %s: %s", mount_point.c_str(), strerror(errno));
+			}
 			continue;
 		}
 
@@ -146,11 +162,11 @@ std::vector<DiskInfo> GetDiskInfoMacOS() {
 
 } // namespace
 
-std::vector<DiskInfo> GetDiskInfo() {
+vector<DiskInfo> GetDiskInfo(ClientContext &context) {
 #ifdef __linux__
-	return GetDiskInfoLinux();
+	return GetDiskInfoLinux(context);
 #elif __APPLE__
-	return GetDiskInfoMacOS();
+	return GetDiskInfoMacOS(context);
 #else
 	throw NotImplementedException("Disk statistics are not supported on this platform");
 #endif

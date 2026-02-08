@@ -1,9 +1,8 @@
 #pragma once
 
-#include <cstdint>
-
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/string_util.hpp"
+#include "duckdb/common/types.hpp"
 
 namespace duckdb {
 

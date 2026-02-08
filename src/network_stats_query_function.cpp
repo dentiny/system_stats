@@ -12,8 +12,8 @@ namespace duckdb {
 namespace {
 
 struct SysNetworkInfoData : public GlobalTableFunctionState {
-	SysNetworkInfoData() : finished(false), current_index(0) {
-		networks = GetNetworkInfo();
+	explicit SysNetworkInfoData(ClientContext &context) : finished(false), current_index(0) {
+		networks = GetNetworkInfo(context);
 	}
 	bool finished;
 	size_t current_index;
@@ -64,7 +64,7 @@ unique_ptr<FunctionData> SysNetworkInfoBind(ClientContext &context, TableFunctio
 }
 
 unique_ptr<GlobalTableFunctionState> SysNetworkInfoInit(ClientContext &context, TableFunctionInitInput &input) {
-	return make_uniq<SysNetworkInfoData>();
+	return make_uniq<SysNetworkInfoData>(context);
 }
 
 void SysNetworkInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChunk &output) {
