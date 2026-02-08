@@ -1,7 +1,6 @@
 #include "os_info.hpp"
 
 #include "duckdb/common/exception.hpp"
-#include "duckdb/common/limits.hpp"
 #include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/string_util.hpp"
@@ -277,12 +276,7 @@ OSInfo GetOSInfoLinux() {
 	// Get uptime
 	struct sysinfo s_info;
 	if (sysinfo(&s_info) == 0) {
-		// Clamp to int32_t range (uptime in seconds should be reasonable)
-		if (s_info.uptime > static_cast<long>(NumericLimits<int32_t>::Maximum())) {
-			info.os_up_since_seconds = NumericLimits<int32_t>::Maximum();
-		} else {
-			info.os_up_since_seconds = UnsafeNumericCast<int32_t>(s_info.uptime);
-		}
+		info.os_up_since_seconds = NumericCast<uint64_t>(s_info.uptime);
 	}
 
 	return info;
@@ -393,12 +387,7 @@ OSInfo GetOSInfoMacOS() {
 	// Get uptime using clock_gettime
 	struct timespec uptime;
 	if (clock_gettime(CLOCK_MONOTONIC_RAW, &uptime) == 0) {
-		// Clamp to int32_t range (uptime in seconds should be reasonable)
-		if (uptime.tv_sec > static_cast<time_t>(NumericLimits<int32_t>::Maximum())) {
-			info.os_up_since_seconds = NumericLimits<int32_t>::Maximum();
-		} else {
-			info.os_up_since_seconds = UnsafeNumericCast<int32_t>(uptime.tv_sec);
-		}
+		info.os_up_since_seconds = NumericCast<uint64_t>(uptime.tv_sec);
 	}
 
 	return info;

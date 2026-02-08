@@ -14,7 +14,7 @@ struct OSInfo {
 	int32_t process_count = 0;
 	int32_t thread_count = 0;
 	std::string architecture;
-	int32_t os_up_since_seconds = 0;
+	uint64_t os_up_since_seconds = 0;
 };
 
 // Get OS information for the current platform
