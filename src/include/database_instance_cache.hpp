@@ -1,10 +1,12 @@
 #pragma once
 
 #include "duckdb/common/shared_ptr.hpp"
-#include "duckdb/main/database.hpp"
 #include "duckdb/storage/object_cache.hpp"
 
 namespace duckdb {
+
+// Forward declaration.
+class DatabaseInstance;
 
 // ObjectCacheEntry that stores a weak pointer to DatabaseInstance
 // Using weak_ptr prevents circular references while allowing safe access
