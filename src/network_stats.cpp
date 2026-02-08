@@ -191,15 +191,15 @@ vector<NetworkInfo> GetNetworkInfoMacOS() {
 			}
 
 			// Get statistics from if_msghdr2
-			info.tx_bytes = UnsafeNumericCast<uint64_t>(if2m->ifm_data.ifi_obytes);
-			info.tx_packets = UnsafeNumericCast<uint64_t>(if2m->ifm_data.ifi_opackets);
-			info.tx_errors = UnsafeNumericCast<uint64_t>(if2m->ifm_data.ifi_oerrors);
+			info.tx_bytes = NumericCast<uint64_t>(if2m->ifm_data.ifi_obytes);
+			info.tx_packets = NumericCast<uint64_t>(if2m->ifm_data.ifi_opackets);
+			info.tx_errors = NumericCast<uint64_t>(if2m->ifm_data.ifi_oerrors);
 			info.tx_dropped = 0; // Not available on macOS
 			info.speed_mbps = 0; // Not available on macOS
-			info.rx_bytes = UnsafeNumericCast<uint64_t>(if2m->ifm_data.ifi_ibytes);
-			info.rx_packets = UnsafeNumericCast<uint64_t>(if2m->ifm_data.ifi_ipackets);
-			info.rx_errors = UnsafeNumericCast<uint64_t>(if2m->ifm_data.ifi_ierrors);
-			info.rx_dropped = UnsafeNumericCast<uint64_t>(if2m->ifm_data.ifi_iqdrops);
+			info.rx_bytes = NumericCast<uint64_t>(if2m->ifm_data.ifi_ibytes);
+			info.rx_packets = NumericCast<uint64_t>(if2m->ifm_data.ifi_ipackets);
+			info.rx_errors = NumericCast<uint64_t>(if2m->ifm_data.ifi_ierrors);
+			info.rx_dropped = NumericCast<uint64_t>(if2m->ifm_data.ifi_iqdrops);
 
 			networks.emplace_back(info);
 			break;

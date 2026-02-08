@@ -105,7 +105,7 @@ MemoryInfo GetMemoryInfoMacOS() {
 	int pagesize = getpagesize();
 
 	// Free memory includes inactive pages
-	info.free_memory = UnsafeNumericCast<uint64_t>(vm_stats.inactive_count + vm_stats.free_count) * pagesize;
+	info.free_memory = NumericCast<uint64_t>(vm_stats.inactive_count + vm_stats.free_count) * pagesize;
 	info.used_memory = info.total_memory - info.free_memory;
 
 	// Get swap usage
