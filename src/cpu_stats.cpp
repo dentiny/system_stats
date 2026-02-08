@@ -3,6 +3,8 @@
 #include "cpu_stats.hpp"
 
 #include "duckdb/common/exception.hpp"
+#include "duckdb/common/numeric_utils.hpp"
+#include "duckdb/common/operator/integer_cast_operator.hpp"
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "string_utils.hpp"
@@ -114,14 +116,13 @@ CPUInfo GetCPUInfoLinux() {
 		}
 		if (key == "physical id") {
 			// Count unique physical processors
-			try {
-				int phys_id = std::stoi(string {value});
+			int32_t phys_id = 0;
+			if (TrySimpleIntegerCast<int32_t>(value.data(), value.length(), phys_id, false)) {
 				if (phys_id + 1 > info.physical_cpus) {
 					info.physical_cpus = phys_id + 1;
 				}
-			} catch (...) {
-				// Ignore parse errors
 			}
+			// Ignore parse errors
 			continue;
 		}
 
@@ -226,19 +227,19 @@ CPUInfo GetCPUInfoMacOS() {
 
 	// Cache sizes (convert from bytes to KB, matching PostgreSQL)
 	if (sysctlbyname("hw.l1dcachesize", &uint64_val, &uint64_size, 0, 0) == 0) {
-		info.l1d_cache_kb = static_cast<int32_t>(uint64_val / 1024);
+		info.l1d_cache_kb = NumericCast<int32_t>(uint64_val / 1024);
 	}
 
 	if (sysctlbyname("hw.l1icachesize", &uint64_val, &uint64_size, 0, 0) == 0) {
-		info.l1i_cache_kb = static_cast<int32_t>(uint64_val / 1024);
+		info.l1i_cache_kb = NumericCast<int32_t>(uint64_val / 1024);
 	}
 
 	if (sysctlbyname("hw.l2cachesize", &uint64_val, &uint64_size, 0, 0) == 0) {
-		info.l2_cache_kb = static_cast<int32_t>(uint64_val / 1024);
+		info.l2_cache_kb = NumericCast<int32_t>(uint64_val / 1024);
 	}
 
 	if (sysctlbyname("hw.l3cachesize", &uint64_val, &uint64_size, 0, 0) == 0) {
-		info.l3_cache_kb = static_cast<int32_t>(uint64_val / 1024);
+		info.l3_cache_kb = NumericCast<int32_t>(uint64_val / 1024);
 	}
 
 	// Model name

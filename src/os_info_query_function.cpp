@@ -47,7 +47,7 @@ unique_ptr<FunctionData> SysOSInfoBind(ClientContext &context, TableFunctionBind
 	return_types.emplace_back(LogicalType {LogicalTypeId::VARCHAR});
 
 	names.emplace_back("os_up_since_seconds");
-	return_types.emplace_back(LogicalType {LogicalTypeId::INTEGER});
+	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
 
 	return nullptr;
 }
@@ -88,7 +88,7 @@ void SysOSInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChunk
 	output.SetValue(col_idx++, 0, Value(info.architecture));
 
 	// os_up_since_seconds
-	output.SetValue(col_idx++, 0, Value::INTEGER(info.os_up_since_seconds));
+	output.SetValue(col_idx++, 0, Value::UBIGINT(info.os_up_since_seconds));
 
 	output.SetCardinality(1);
 	data.finished = true;

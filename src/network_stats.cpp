@@ -1,6 +1,7 @@
 #include "network_stats.hpp"
 
 #include "duckdb/common/exception.hpp"
+#include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/common/vector.hpp"
@@ -190,15 +191,15 @@ vector<NetworkInfo> GetNetworkInfoMacOS() {
 			}
 
 			// Get statistics from if_msghdr2
-			info.tx_bytes = static_cast<uint64_t>(if2m->ifm_data.ifi_obytes);
-			info.tx_packets = static_cast<uint64_t>(if2m->ifm_data.ifi_opackets);
-			info.tx_errors = static_cast<uint64_t>(if2m->ifm_data.ifi_oerrors);
+			info.tx_bytes = NumericCast<uint64_t>(if2m->ifm_data.ifi_obytes);
+			info.tx_packets = NumericCast<uint64_t>(if2m->ifm_data.ifi_opackets);
+			info.tx_errors = NumericCast<uint64_t>(if2m->ifm_data.ifi_oerrors);
 			info.tx_dropped = 0; // Not available on macOS
 			info.speed_mbps = 0; // Not available on macOS
-			info.rx_bytes = static_cast<uint64_t>(if2m->ifm_data.ifi_ibytes);
-			info.rx_packets = static_cast<uint64_t>(if2m->ifm_data.ifi_ipackets);
-			info.rx_errors = static_cast<uint64_t>(if2m->ifm_data.ifi_ierrors);
-			info.rx_dropped = static_cast<uint64_t>(if2m->ifm_data.ifi_iqdrops);
+			info.rx_bytes = NumericCast<uint64_t>(if2m->ifm_data.ifi_ibytes);
+			info.rx_packets = NumericCast<uint64_t>(if2m->ifm_data.ifi_ipackets);
+			info.rx_errors = NumericCast<uint64_t>(if2m->ifm_data.ifi_ierrors);
+			info.rx_dropped = NumericCast<uint64_t>(if2m->ifm_data.ifi_iqdrops);
 
 			networks.emplace_back(info);
 			break;
