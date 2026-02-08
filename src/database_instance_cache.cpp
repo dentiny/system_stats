@@ -28,7 +28,7 @@ shared_ptr<DatabaseInstance> DatabaseInstanceCacheEntry::GetDbInstance() {
 
 shared_ptr<DatabaseInstance> GetDbInstance(ClientContext &context) {
 	auto &cache = context.db->GetObjectCache();
-	auto entry = cache.Get<DatabaseInstanceCacheEntry>("system_stats_db_instance");
+	auto entry = cache.Get<DatabaseInstanceCacheEntry>(DatabaseInstanceCacheEntry::ObjectType());
 	if (!entry) {
 		throw InternalException("DatabaseInstance cache entry not found");
 	}

@@ -21,7 +21,7 @@ void LoadInternal(ExtensionLoader &loader) {
 	auto db_shared = db.shared_from_this();
 	auto &cache = db.GetObjectCache();
 	auto entry = make_shared_ptr<DatabaseInstanceCacheEntry>(db_shared);
-	cache.Put("system_stats_db_instance", entry);
+	cache.Put(DatabaseInstanceCacheEntry::ObjectType(), std::move(entry));
 
 	RegisterSysMemoryInfoFunction(loader);
 	RegisterSysCPUInfoFunction(loader);
