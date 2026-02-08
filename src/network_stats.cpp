@@ -1,10 +1,12 @@
 #include "network_stats.hpp"
 
+#include "database_instance_storage.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/common/vector.hpp"
+#include "duckdb/logging/logger.hpp"
 #include "scope_guard.hpp"
 
 #ifdef __linux__
@@ -18,6 +20,7 @@
 #elif __APPLE__
 #include <arpa/inet.h>
 #include <array>
+#include <cerrno>
 #include <cstdlib>
 #include <cstring>
 #include <ifaddrs.h>
@@ -39,9 +42,13 @@ namespace {
 #ifdef __linux__
 // Read a value from a file in /sys/class/net
 uint64_t ReadSysNetValue(const string &interface, const string &stat_name) {
+	auto *db = DatabaseInstanceStorage::Get();
 	string file_path = StringUtil::Format("/sys/class/net/%s/statistics/%s", interface, stat_name);
 	std::ifstream file(file_path);
 	if (!file.is_open()) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "Failed to open %s: %s", file_path.c_str(), strerror(errno));
+		}
 		return 0;
 	}
 	uint64_t value = 0;
@@ -51,9 +58,13 @@ uint64_t ReadSysNetValue(const string &interface, const string &stat_name) {
 
 // Read speed from /sys/class/net/{interface}/speed
 uint64_t ReadSpeedMbps(const string &interface) {
+	auto *db = DatabaseInstanceStorage::Get();
 	string file_path = StringUtil::Format("/sys/class/net/%s/speed", interface);
 	std::ifstream file(file_path);
 	if (!file.is_open()) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "Failed to open %s: %s", file_path.c_str(), strerror(errno));
+		}
 		return 0;
 	}
 	uint64_t speed = 0;
@@ -62,11 +73,15 @@ uint64_t ReadSpeedMbps(const string &interface) {
 }
 
 vector<NetworkInfo> GetNetworkInfoLinux() {
+	auto *db = DatabaseInstanceStorage::Get();
 	vector<NetworkInfo> networks;
 	struct ifaddrs *ifaddr;
 	struct ifaddrs *ifa;
 
 	if (getifaddrs(&ifaddr) == -1) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "getifaddrs() failed: %s", strerror(errno));
+		}
 		return networks;
 	}
 
@@ -92,7 +107,12 @@ vector<NetworkInfo> GetNetworkInfoLinux() {
 		std::array<char, NI_MAXHOST> host;
 		int ret =
 		    getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host.data(), NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
-		if (ret == 0) {
+		if (ret != 0) {
+			if (auto *db = DatabaseInstanceStorage::Get()) {
+				DUCKDB_LOG_DEBUG(*db, "getnameinfo() failed for interface %s: %s", info.interface_name.c_str(),
+				                 gai_strerror(ret));
+			}
+		} else {
 			info.ipv4_address = host.data();
 		}
 
@@ -116,6 +136,7 @@ vector<NetworkInfo> GetNetworkInfoLinux() {
 
 #ifdef __APPLE__
 vector<NetworkInfo> GetNetworkInfoMacOS() {
+	auto *db = DatabaseInstanceStorage::Get();
 	vector<NetworkInfo> networks;
 
 	// Get network interface list using sysctl
@@ -123,11 +144,17 @@ vector<NetworkInfo> GetNetworkInfoMacOS() {
 	size_t len = 0;
 
 	if (sysctl(desc.data(), 6, NULL, &len, NULL, 0) < 0) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get network interface list size: %s", strerror(errno));
+		}
 		return networks;
 	}
 
 	char *buf = static_cast<char *>(malloc(len));
 	if (buf == NULL) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "malloc() failed to allocate %zu bytes for network interface list", len);
+		}
 		return networks;
 	}
 
@@ -136,12 +163,18 @@ vector<NetworkInfo> GetNetworkInfoMacOS() {
 	};
 
 	if (sysctl(desc.data(), 6, buf, &len, NULL, 0) < 0) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get network interface list: %s", strerror(errno));
+		}
 		return networks;
 	}
 
 	// Get interface addresses using getifaddrs
 	struct ifaddrs *ifaddr;
 	if (getifaddrs(&ifaddr) == -1) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "getifaddrs() failed: %s", strerror(errno));
+		}
 		return networks;
 	}
 
@@ -186,7 +219,12 @@ vector<NetworkInfo> GetNetworkInfoMacOS() {
 			std::array<char, NI_MAXHOST> host;
 			int ret = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host.data(), NI_MAXHOST, NULL, 0,
 			                      NI_NUMERICHOST);
-			if (ret == 0) {
+			if (ret != 0) {
+				if (db) {
+					DUCKDB_LOG_DEBUG(*db, "getnameinfo() failed for interface %s: %s", info.interface_name.c_str(),
+					                 gai_strerror(ret));
+				}
+			} else {
 				info.ipv4_address = host.data();
 			}
 

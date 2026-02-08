@@ -1,16 +1,17 @@
-// TODO(hjiang): Add warning logging for failed system calls.
-
 #include "memory_stats.hpp"
 
+#include "database_instance_storage.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/string.hpp"
+#include "duckdb/logging/logger.hpp"
 
 #ifdef __linux__
 #include <fstream>
 #include <sstream>
 #elif __APPLE__
 #include <array>
+#include <cerrno>
 #include <mach/mach.h>
 #include <sys/sysctl.h>
 #include <sys/types.h>
@@ -37,8 +38,15 @@ uint64_t ParseBytesValue(const string &line) {
 }
 
 MemoryInfo GetMemoryInfoLinux() {
+	auto *db = DatabaseInstanceStorage::Get();
 	MemoryInfo info;
 	std::ifstream meminfo("/proc/meminfo");
+	if (!meminfo.is_open()) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "Failed to open /proc/meminfo: %s", strerror(errno));
+		}
+		return info;
+	}
 	string line;
 	int parsed_count = 0;
 
@@ -83,12 +91,16 @@ MemoryInfo GetMemoryInfoLinux() {
 
 #ifdef __APPLE__
 MemoryInfo GetMemoryInfoMacOS() {
+	auto *db = DatabaseInstanceStorage::Get();
 	MemoryInfo info;
 
 	// Get total physical memory
 	std::array<int, 2> mib = {CTL_HW, HW_MEMSIZE};
 	size_t len = sizeof(info.total_memory);
 	if (sysctl(mib.data(), 2, &info.total_memory, &len, NULL, 0) != 0) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get total memory: %s", strerror(errno));
+		}
 		return info;
 	}
 
@@ -99,6 +111,9 @@ MemoryInfo GetMemoryInfoMacOS() {
 
 	kern_return_t ret = host_statistics(mport, HOST_VM_INFO, (host_info_t)&vm_stats, &count);
 	if (ret != KERN_SUCCESS) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "host_statistics() failed with error code: %d", ret);
+		}
 		return info;
 	}
 
@@ -112,7 +127,11 @@ MemoryInfo GetMemoryInfoMacOS() {
 	std::array<int, 2> swap_mib = {CTL_VM, VM_SWAPUSAGE};
 	struct xsw_usage swap_info;
 	size_t swap_len = sizeof(swap_info);
-	if (sysctl(swap_mib.data(), 2, &swap_info, &swap_len, NULL, 0) == 0) {
+	if (sysctl(swap_mib.data(), 2, &swap_info, &swap_len, NULL, 0) != 0) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get swap usage: %s", strerror(errno));
+		}
+	} else {
 		info.total_swap = swap_info.xsu_total;
 		info.used_swap = swap_info.xsu_used;
 		info.free_swap = swap_info.xsu_avail;

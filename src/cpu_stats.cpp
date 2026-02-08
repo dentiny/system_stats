@@ -2,11 +2,13 @@
 
 #include "cpu_stats.hpp"
 
+#include "database_instance_storage.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/operator/integer_cast_operator.hpp"
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/string_util.hpp"
+#include "duckdb/logging/logger.hpp"
 #include "string_utils.hpp"
 
 #ifdef __linux__
@@ -15,6 +17,7 @@
 #include <sys/utsname.h>
 #elif __APPLE__
 #include <array>
+#include <cerrno>
 #include <sys/sysctl.h>
 #include <sys/types.h>
 #endif
@@ -36,8 +39,12 @@ string GetByteOrder() {
 // Read CPU cache size from sysfs in KiB.
 // Example content: "32K", "256K", etc.
 int32_t ReadCPUCacheSize(const char *path) {
+	auto *db = DatabaseInstanceStorage::Get();
 	std::ifstream file(path);
-	if (!file) {
+	if (!file.is_open()) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "Failed to open %s: %s", path, strerror(errno));
+		}
 		return 0;
 	}
 
@@ -58,10 +65,15 @@ int32_t ReadCPUCacheSize(const char *path) {
 }
 
 CPUInfo GetCPUInfoLinux() {
+	auto *db = DatabaseInstanceStorage::Get();
 	CPUInfo info;
 
 	struct utsname uts;
-	if (uname(&uts) == 0) {
+	if (uname(&uts) != 0) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "uname() failed: %s", strerror(errno));
+		}
+	} else {
 		info.architecture = uts.machine;
 	}
 
@@ -76,7 +88,10 @@ CPUInfo GetCPUInfoLinux() {
 
 	// Parse /proc/cpuinfo
 	std::ifstream cpuinfo("/proc/cpuinfo");
-	if (!cpuinfo) {
+	if (!cpuinfo.is_open()) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "Failed to open /proc/cpuinfo: %s", strerror(errno));
+		}
 		return info;
 	}
 
@@ -189,6 +204,7 @@ string GetByteOrderMacOS() {
 }
 
 CPUInfo GetCPUInfoMacOS() {
+	auto *db = DatabaseInstanceStorage::Get();
 	CPUInfo info;
 
 	// Get number of available CPUs
@@ -197,8 +213,15 @@ CPUInfo GetCPUInfoMacOS() {
 	size_t len = sizeof(count);
 
 	if (sysctl(mib.data(), 2, &count, &len, NULL, 0) != 0 || count < 1) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get available CPUs, trying HW_NCPU: %s", strerror(errno));
+		}
 		mib[1] = HW_NCPU;
-		sysctl(mib.data(), 2, &count, &len, NULL, 0);
+		if (sysctl(mib.data(), 2, &count, &len, NULL, 0) != 0) {
+			if (db) {
+				DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get CPU count: %s", strerror(errno));
+			}
+		}
 		if (count < 1) {
 			count = 1;
 		}
@@ -250,7 +273,11 @@ CPUInfo GetCPUInfoMacOS() {
 
 	// Machine architecture
 	str_size = sizeof(str_val);
-	if (sysctlbyname("hw.machine", str_val, &str_size, 0, 0) == 0) {
+	if (sysctlbyname("hw.machine", str_val, &str_size, 0, 0) != 0) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "sysctlbyname() failed to get machine architecture: %s", strerror(errno));
+		}
+	} else {
 		info.architecture = str_val;
 	}
 

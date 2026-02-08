@@ -5,16 +5,20 @@
 #include <cstring>
 #include <regex>
 
+#include "database_instance_storage.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/common/types.hpp"
+#include "duckdb/logging/logger.hpp"
 
 #ifdef __linux__
+#include <cerrno>
 #include <mntent.h>
 #include <sys/statvfs.h>
 #elif __APPLE__
+#include <cerrno>
 #include <sys/mount.h>
 #include <sys/statvfs.h>
 #endif
@@ -50,6 +54,7 @@ bool IgnoreMountPoint(const string &mount_point) {
 #ifdef __linux__
 
 std::vector<DiskInfo> GetDiskInfoLinux() {
+	auto *db = DatabaseInstanceStorage::Get();
 	std::vector<DiskInfo> disks;
 
 	FILE *fp = setmntent("/etc/mtab", "r");
@@ -59,6 +64,9 @@ std::vector<DiskInfo> GetDiskInfoLinux() {
 	}
 
 	if (!fp) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "Failed to open /etc/mtab and /proc/mounts: %s", strerror(errno));
+		}
 		return disks;
 	}
 
@@ -76,6 +84,9 @@ std::vector<DiskInfo> GetDiskInfoLinux() {
 
 		memset(&buf, 0, sizeof(buf));
 		if (statvfs(mount_point.c_str(), &buf) != 0) {
+			if (auto *db = DatabaseInstanceStorage::Get()) {
+				DUCKDB_LOG_DEBUG(*db, "statvfs() failed for %s: %s", mount_point.c_str(), strerror(errno));
+			}
 			continue;
 		}
 
@@ -102,11 +113,15 @@ std::vector<DiskInfo> GetDiskInfoLinux() {
 
 #ifdef __APPLE__
 std::vector<DiskInfo> GetDiskInfoMacOS() {
+	auto *db = DatabaseInstanceStorage::Get();
 	std::vector<DiskInfo> disks;
 
 	struct statfs *mntbuf;
 	int count = getmntinfo(&mntbuf, MNT_NOWAIT);
 	if (count <= 0) {
+		if (db) {
+			DUCKDB_LOG_DEBUG(*db, "getmntinfo() failed: %s", strerror(errno));
+		}
 		return disks;
 	}
 
@@ -121,6 +136,9 @@ std::vector<DiskInfo> GetDiskInfoMacOS() {
 
 		struct statvfs buf;
 		if (statvfs(mount_point.c_str(), &buf) != 0) {
+			if (auto *db = DatabaseInstanceStorage::Get()) {
+				DUCKDB_LOG_DEBUG(*db, "statvfs() failed for %s: %s", mount_point.c_str(), strerror(errno));
+			}
 			continue;
 		}
 

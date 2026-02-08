@@ -3,6 +3,7 @@
 #include "system_stats_extension.hpp"
 
 #include "cpu_stats_query_function.hpp"
+#include "database_instance_storage.hpp"
 #include "disk_stats_query_function.hpp"
 #include "duckdb.hpp"
 #include "memory_stats_query_function.hpp"
@@ -14,6 +15,9 @@ namespace duckdb {
 namespace {
 
 void LoadInternal(ExtensionLoader &loader) {
+	// Store DatabaseInstance reference for logging
+	DatabaseInstanceStorage::Set(loader.GetDatabaseInstance());
+
 	RegisterSysMemoryInfoFunction(loader);
 	RegisterSysCPUInfoFunction(loader);
 	RegisterSysDiskInfoFunction(loader);
