@@ -82,7 +82,7 @@ void SysMemoryInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataC
 		return;
 	}
 
-	MemoryInfo info = GetMemoryInfo();
+	MemoryInfo info = GetMemoryInfo(context);
 
 	idx_t col_idx = 0;
 

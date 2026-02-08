@@ -1,6 +1,6 @@
 #include "memory_stats.hpp"
 
-#include "database_instance_storage.hpp"
+#include "database_instance_cache.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/string.hpp"
@@ -37,12 +37,11 @@ uint64_t ParseBytesValue(const string &line) {
 	return 0;
 }
 
-MemoryInfo GetMemoryInfoLinux() {
-	auto *db = DatabaseInstanceStorage::Get();
+MemoryInfo GetMemoryInfoLinux(ClientContext &context) {
 	MemoryInfo info;
 	std::ifstream meminfo("/proc/meminfo");
 	if (!meminfo.is_open()) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "Failed to open /proc/meminfo: %s", strerror(errno));
 		}
 		return info;
@@ -90,15 +89,14 @@ MemoryInfo GetMemoryInfoLinux() {
 #endif
 
 #ifdef __APPLE__
-MemoryInfo GetMemoryInfoMacOS() {
-	auto *db = DatabaseInstanceStorage::Get();
+MemoryInfo GetMemoryInfoMacOS(ClientContext &context) {
 	MemoryInfo info;
 
 	// Get total physical memory
 	std::array<int, 2> mib = {CTL_HW, HW_MEMSIZE};
 	size_t len = sizeof(info.total_memory);
 	if (sysctl(mib.data(), 2, &info.total_memory, &len, NULL, 0) != 0) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get total memory: %s", strerror(errno));
 		}
 		return info;
@@ -111,7 +109,7 @@ MemoryInfo GetMemoryInfoMacOS() {
 
 	kern_return_t ret = host_statistics(mport, HOST_VM_INFO, (host_info_t)&vm_stats, &count);
 	if (ret != KERN_SUCCESS) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "host_statistics() failed with error code: %d", ret);
 		}
 		return info;
@@ -128,7 +126,7 @@ MemoryInfo GetMemoryInfoMacOS() {
 	struct xsw_usage swap_info;
 	size_t swap_len = sizeof(swap_info);
 	if (sysctl(swap_mib.data(), 2, &swap_info, &swap_len, NULL, 0) != 0) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get swap usage: %s", strerror(errno));
 		}
 	} else {
@@ -143,11 +141,11 @@ MemoryInfo GetMemoryInfoMacOS() {
 
 } // namespace
 
-MemoryInfo GetMemoryInfo() {
+MemoryInfo GetMemoryInfo(ClientContext &context) {
 #ifdef __linux__
-	return GetMemoryInfoLinux();
+	return GetMemoryInfoLinux(context);
 #elif __APPLE__
-	return GetMemoryInfoMacOS();
+	return GetMemoryInfoMacOS(context);
 #else
 	throw NotImplementedException("Memory statistics are not supported on this platform");
 #endif

@@ -4,6 +4,7 @@
 #include <cstdint>
 
 namespace duckdb {
+class ClientContext;
 
 struct CPUInfo {
 	// Basic CPU info
@@ -25,6 +26,6 @@ struct CPUInfo {
 };
 
 // Get CPU information for the current platform
-CPUInfo GetCPUInfo();
+CPUInfo GetCPUInfo(ClientContext &context);
 
 } // namespace duckdb

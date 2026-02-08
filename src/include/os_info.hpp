@@ -5,6 +5,7 @@
 #include "duckdb/common/vector.hpp"
 
 namespace duckdb {
+class ClientContext;
 
 struct OSInfo {
 	std::string name;
@@ -18,6 +19,6 @@ struct OSInfo {
 };
 
 // Get OS information for the current platform
-OSInfo GetOSInfo();
+OSInfo GetOSInfo(ClientContext &context);
 
 } // namespace duckdb

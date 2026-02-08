@@ -1,6 +1,6 @@
 #include "network_stats.hpp"
 
-#include "database_instance_storage.hpp"
+#include "database_instance_cache.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/string.hpp"
@@ -41,12 +41,11 @@ namespace {
 
 #ifdef __linux__
 // Read a value from a file in /sys/class/net
-uint64_t ReadSysNetValue(const string &interface, const string &stat_name) {
-	auto *db = DatabaseInstanceStorage::Get();
+uint64_t ReadSysNetValue(ClientContext &context, const string &interface, const string &stat_name) {
 	string file_path = StringUtil::Format("/sys/class/net/%s/statistics/%s", interface, stat_name);
 	std::ifstream file(file_path);
 	if (!file.is_open()) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "Failed to open %s: %s", file_path.c_str(), strerror(errno));
 		}
 		return 0;
@@ -57,12 +56,11 @@ uint64_t ReadSysNetValue(const string &interface, const string &stat_name) {
 }
 
 // Read speed from /sys/class/net/{interface}/speed
-uint64_t ReadSpeedMbps(const string &interface) {
-	auto *db = DatabaseInstanceStorage::Get();
+uint64_t ReadSpeedMbps(ClientContext &context, const string &interface) {
 	string file_path = StringUtil::Format("/sys/class/net/%s/speed", interface);
 	std::ifstream file(file_path);
 	if (!file.is_open()) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "Failed to open %s: %s", file_path.c_str(), strerror(errno));
 		}
 		return 0;
@@ -72,14 +70,13 @@ uint64_t ReadSpeedMbps(const string &interface) {
 	return speed;
 }
 
-vector<NetworkInfo> GetNetworkInfoLinux() {
-	auto *db = DatabaseInstanceStorage::Get();
+vector<NetworkInfo> GetNetworkInfoLinux(ClientContext &context) {
 	vector<NetworkInfo> networks;
 	struct ifaddrs *ifaddr;
 	struct ifaddrs *ifa;
 
 	if (getifaddrs(&ifaddr) == -1) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "getifaddrs() failed: %s", strerror(errno));
 		}
 		return networks;
@@ -108,7 +105,7 @@ vector<NetworkInfo> GetNetworkInfoLinux() {
 		int ret =
 		    getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host.data(), NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
 		if (ret != 0) {
-			if (auto *db = DatabaseInstanceStorage::Get()) {
+			if (auto *db = GetDbInstance(context)) {
 				DUCKDB_LOG_DEBUG(*db, "getnameinfo() failed for interface %s: %s", info.interface_name.c_str(),
 				                 gai_strerror(ret));
 			}
@@ -117,15 +114,15 @@ vector<NetworkInfo> GetNetworkInfoLinux() {
 		}
 
 		// Read statistics from /sys/class/net
-		info.speed_mbps = ReadSpeedMbps(info.interface_name);
-		info.rx_bytes = ReadSysNetValue(info.interface_name, "rx_bytes");
-		info.tx_bytes = ReadSysNetValue(info.interface_name, "tx_bytes");
-		info.rx_packets = ReadSysNetValue(info.interface_name, "rx_packets");
-		info.tx_packets = ReadSysNetValue(info.interface_name, "tx_packets");
-		info.rx_errors = ReadSysNetValue(info.interface_name, "rx_errors");
-		info.tx_errors = ReadSysNetValue(info.interface_name, "tx_errors");
-		info.rx_dropped = ReadSysNetValue(info.interface_name, "rx_dropped");
-		info.tx_dropped = ReadSysNetValue(info.interface_name, "tx_dropped");
+		info.speed_mbps = ReadSpeedMbps(context, info.interface_name);
+		info.rx_bytes = ReadSysNetValue(context, info.interface_name, "rx_bytes");
+		info.tx_bytes = ReadSysNetValue(context, info.interface_name, "tx_bytes");
+		info.rx_packets = ReadSysNetValue(context, info.interface_name, "rx_packets");
+		info.tx_packets = ReadSysNetValue(context, info.interface_name, "tx_packets");
+		info.rx_errors = ReadSysNetValue(context, info.interface_name, "rx_errors");
+		info.tx_errors = ReadSysNetValue(context, info.interface_name, "tx_errors");
+		info.rx_dropped = ReadSysNetValue(context, info.interface_name, "rx_dropped");
+		info.tx_dropped = ReadSysNetValue(context, info.interface_name, "tx_dropped");
 
 		networks.emplace_back(info);
 	}
@@ -135,8 +132,7 @@ vector<NetworkInfo> GetNetworkInfoLinux() {
 #endif
 
 #ifdef __APPLE__
-vector<NetworkInfo> GetNetworkInfoMacOS() {
-	auto *db = DatabaseInstanceStorage::Get();
+vector<NetworkInfo> GetNetworkInfoMacOS(ClientContext &context) {
 	vector<NetworkInfo> networks;
 
 	// Get network interface list using sysctl
@@ -144,7 +140,7 @@ vector<NetworkInfo> GetNetworkInfoMacOS() {
 	size_t len = 0;
 
 	if (sysctl(desc.data(), 6, NULL, &len, NULL, 0) < 0) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get network interface list size: %s", strerror(errno));
 		}
 		return networks;
@@ -152,7 +148,7 @@ vector<NetworkInfo> GetNetworkInfoMacOS() {
 
 	char *buf = static_cast<char *>(malloc(len));
 	if (buf == NULL) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "malloc() failed to allocate %zu bytes for network interface list", len);
 		}
 		return networks;
@@ -163,7 +159,7 @@ vector<NetworkInfo> GetNetworkInfoMacOS() {
 	};
 
 	if (sysctl(desc.data(), 6, buf, &len, NULL, 0) < 0) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get network interface list: %s", strerror(errno));
 		}
 		return networks;
@@ -172,7 +168,7 @@ vector<NetworkInfo> GetNetworkInfoMacOS() {
 	// Get interface addresses using getifaddrs
 	struct ifaddrs *ifaddr;
 	if (getifaddrs(&ifaddr) == -1) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "getifaddrs() failed: %s", strerror(errno));
 		}
 		return networks;
@@ -220,7 +216,7 @@ vector<NetworkInfo> GetNetworkInfoMacOS() {
 			int ret = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host.data(), NI_MAXHOST, NULL, 0,
 			                      NI_NUMERICHOST);
 			if (ret != 0) {
-				if (db) {
+				if (auto *db = GetDbInstance(context)) {
 					DUCKDB_LOG_DEBUG(*db, "getnameinfo() failed for interface %s: %s", info.interface_name.c_str(),
 					                 gai_strerror(ret));
 				}
@@ -250,11 +246,11 @@ vector<NetworkInfo> GetNetworkInfoMacOS() {
 
 } // namespace
 
-vector<NetworkInfo> GetNetworkInfo() {
+vector<NetworkInfo> GetNetworkInfo(ClientContext &context) {
 #ifdef __linux__
-	return GetNetworkInfoLinux();
+	return GetNetworkInfoLinux(context);
 #elif __APPLE__
-	return GetNetworkInfoMacOS();
+	return GetNetworkInfoMacOS(context);
 #else
 	throw NotImplementedException("Network statistics are not supported on this platform");
 #endif

@@ -3,6 +3,7 @@
 #include <cstdint>
 
 namespace duckdb {
+class ClientContext;
 
 struct MemoryInfo {
 	uint64_t total_memory = 0;
@@ -15,6 +16,6 @@ struct MemoryInfo {
 };
 
 // Get memory information for the current platform
-MemoryInfo GetMemoryInfo();
+MemoryInfo GetMemoryInfo(ClientContext &context);
 
 } // namespace duckdb

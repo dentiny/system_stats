@@ -1,11 +1,12 @@
 #include "os_info.hpp"
 
-#include "database_instance_storage.hpp"
+#include "database_instance_cache.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/logging/logger.hpp"
+#include "duckdb/main/client_context.hpp"
 #include "scope_guard.hpp"
 #include "string_utils.hpp"
 
@@ -52,13 +53,13 @@ struct ProcessStatus {
 };
 
 // Read OS name from /etc/os-release; return empty string if not found.
-string ReadOSName() {
+string ReadOSName(ClientContext &context) {
 	// Key-value pair example: PRETTY_NAME="Debian GNU/Linux 13 (trixie)"
 	static constexpr std::string_view OS_NAME_PREFIX = "PRETTY_NAME=";
 
 	std::ifstream os_file("/etc/os-release");
 	if (!os_file.is_open()) {
-		if (auto *db = DatabaseInstanceStorage::Get()) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "Failed to open /etc/os-release: %s", strerror(errno));
 		}
 		return "";
@@ -79,10 +80,10 @@ string ReadOSName() {
 }
 
 // Read handle count from /proc/sys/fs/file-nr
-int32_t ReadHandleCount() {
+int32_t ReadHandleCount(ClientContext &context) {
 	std::ifstream file("/proc/sys/fs/file-nr");
 	if (!file.is_open()) {
-		if (auto *db = DatabaseInstanceStorage::Get()) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "Failed to open /proc/sys/fs/file-nr: %s", strerror(errno));
 		}
 		return 0;
@@ -247,13 +248,12 @@ ProcessStatus ReadProcessStatus() {
 	return status;
 }
 
-OSInfo GetOSInfoLinux() {
+OSInfo GetOSInfoLinux(ClientContext &context) {
 	OSInfo info;
-	auto *db = DatabaseInstanceStorage::Get();
 
 	struct utsname uts;
 	if (uname(&uts) != 0) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "uname() failed: %s", strerror(errno));
 		}
 	} else {
@@ -264,7 +264,7 @@ OSInfo GetOSInfoLinux() {
 	// Get hostname
 	std::array<char, 256> hostname_buf {};
 	if (gethostname(hostname_buf.data(), hostname_buf.size()) != 0) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "gethostname() failed: %s", strerror(errno));
 		}
 	} else {
@@ -272,7 +272,7 @@ OSInfo GetOSInfoLinux() {
 	}
 
 	// Read OS name from /etc/os-release
-	info.name = ReadOSName();
+	info.name = ReadOSName(context);
 	if (info.name.empty()) {
 		// Fallback to sysname from uname
 		if (uname(&uts) == 0) {
@@ -281,7 +281,7 @@ OSInfo GetOSInfoLinux() {
 	}
 
 	// Read handle count
-	info.handle_count = ReadHandleCount();
+	info.handle_count = ReadHandleCount(context);
 	if (info.handle_count == 0) {
 		// Fallback: count file descriptors from /proc/*/fd if /proc/sys/fs/file-nr is unavailable
 		info.handle_count = ReadHandleCountFallback();
@@ -295,7 +295,7 @@ OSInfo GetOSInfoLinux() {
 	// Get uptime
 	struct sysinfo s_info;
 	if (sysinfo(&s_info) != 0) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysinfo() failed: %s", strerror(errno));
 		}
 	} else {
@@ -306,12 +306,11 @@ OSInfo GetOSInfoLinux() {
 }
 #elif __APPLE__
 // Get thread count on macOS by summing threads from all processes
-int32_t GetThreadCountMacOS() {
-	auto *db = DatabaseInstanceStorage::Get();
+int32_t GetThreadCountMacOS(ClientContext &context) {
 	std::array<int, 4> mib = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
 	size_t len = 0;
 	if (sysctl(mib.data(), mib.size(), nullptr, &len, nullptr, 0) != 0 || len == 0) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get process list size: %s", strerror(errno));
 		}
 		return 0;
@@ -319,7 +318,7 @@ int32_t GetThreadCountMacOS() {
 
 	char *buf = static_cast<char *>(malloc(len));
 	if (buf == nullptr) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "malloc() failed to allocate %zu bytes for process list", len);
 		}
 		return 0;
@@ -330,7 +329,7 @@ int32_t GetThreadCountMacOS() {
 	};
 
 	if (sysctl(mib.data(), mib.size(), buf, &len, nullptr, 0) != 0) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get process list: %s", strerror(errno));
 		}
 		return 0;
@@ -353,12 +352,11 @@ int32_t GetThreadCountMacOS() {
 }
 
 // Get handle count on macOS by summing file descriptors from all processes
-int32_t GetHandleCountMacOS() {
-	auto *db = DatabaseInstanceStorage::Get();
+int32_t GetHandleCountMacOS(ClientContext &context) {
 	std::array<int, 4> mib = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
 	size_t len = 0;
 	if (sysctl(mib.data(), mib.size(), nullptr, &len, nullptr, 0) != 0 || len == 0) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get process list size: %s", strerror(errno));
 		}
 		return 0;
@@ -366,7 +364,7 @@ int32_t GetHandleCountMacOS() {
 
 	char *buf = static_cast<char *>(malloc(len));
 	if (buf == nullptr) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "malloc() failed to allocate %zu bytes for process list", len);
 		}
 		return 0;
@@ -377,7 +375,7 @@ int32_t GetHandleCountMacOS() {
 	};
 
 	if (sysctl(mib.data(), mib.size(), buf, &len, nullptr, 0) != 0) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get process list: %s", strerror(errno));
 		}
 		return 0;
@@ -398,13 +396,12 @@ int32_t GetHandleCountMacOS() {
 	return total_handles;
 }
 
-OSInfo GetOSInfoMacOS() {
+OSInfo GetOSInfoMacOS(ClientContext &context) {
 	OSInfo info;
-	auto *db = DatabaseInstanceStorage::Get();
 
 	struct utsname uts;
 	if (uname(&uts) != 0) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "uname() failed: %s", strerror(errno));
 		}
 	} else {
@@ -416,7 +413,7 @@ OSInfo GetOSInfoMacOS() {
 	// Get hostname
 	std::array<char, 256> hostname_buf;
 	if (gethostname(hostname_buf.data(), hostname_buf.size()) != 0) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "gethostname() failed: %s", strerror(errno));
 		}
 	} else {
@@ -427,7 +424,7 @@ OSInfo GetOSInfoMacOS() {
 	std::array<int, 4> mib = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
 	size_t len = 0;
 	if (sysctl(mib.data(), mib.size(), nullptr, &len, nullptr, 0) != 0) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "sysctl() failed to get process count: %s", strerror(errno));
 		}
 	} else if (len > 0) {
@@ -435,15 +432,15 @@ OSInfo GetOSInfoMacOS() {
 	}
 
 	// Get thread count by summing threads from all processes
-	info.thread_count = GetThreadCountMacOS();
+	info.thread_count = GetThreadCountMacOS(context);
 
 	// Get handle count by summing file descriptors from all processes
-	info.handle_count = GetHandleCountMacOS();
+	info.handle_count = GetHandleCountMacOS(context);
 
 	// Get uptime using clock_gettime
 	struct timespec uptime;
 	if (clock_gettime(CLOCK_MONOTONIC_RAW, &uptime) != 0) {
-		if (db) {
+		if (auto *db = GetDbInstance(context)) {
 			DUCKDB_LOG_DEBUG(*db, "clock_gettime() failed: %s", strerror(errno));
 		}
 	} else {
@@ -456,11 +453,11 @@ OSInfo GetOSInfoMacOS() {
 
 } // namespace
 
-OSInfo GetOSInfo() {
+OSInfo GetOSInfo(ClientContext &context) {
 #ifdef __linux__
-	return GetOSInfoLinux();
+	return GetOSInfoLinux(context);
 #elif __APPLE__
-	return GetOSInfoMacOS();
+	return GetOSInfoMacOS(context);
 #else
 	throw NotImplementedException("OS information is not supported on this platform");
 #endif

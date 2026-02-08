@@ -3,9 +3,10 @@
 #include "system_stats_extension.hpp"
 
 #include "cpu_stats_query_function.hpp"
-#include "database_instance_storage.hpp"
+#include "database_instance_cache.hpp"
 #include "disk_stats_query_function.hpp"
 #include "duckdb.hpp"
+#include "duckdb/storage/object_cache.hpp"
 #include "memory_stats_query_function.hpp"
 #include "network_stats_query_function.hpp"
 #include "os_info_query_function.hpp"
@@ -15,8 +16,11 @@ namespace duckdb {
 namespace {
 
 void LoadInternal(ExtensionLoader &loader) {
-	// Store DatabaseInstance reference for logging
-	DatabaseInstanceStorage::Set(loader.GetDatabaseInstance());
+	// Store DatabaseInstance in ObjectCache for per-database access
+	auto &db = loader.GetDatabaseInstance();
+	auto &cache = db.GetObjectCache();
+	auto entry = make_shared_ptr<DatabaseInstanceCacheEntry>(db);
+	cache.Put("system_stats_db_instance", entry);
 
 	RegisterSysMemoryInfoFunction(loader);
 	RegisterSysCPUInfoFunction(loader);

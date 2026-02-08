@@ -5,6 +5,7 @@
 #include <vector>
 
 namespace duckdb {
+class ClientContext;
 
 struct DiskInfo {
 	string mount_point;
@@ -16,6 +17,6 @@ struct DiskInfo {
 };
 
 // Get disk information for the current platform
-std::vector<DiskInfo> GetDiskInfo();
+std::vector<DiskInfo> GetDiskInfo(ClientContext &context);
 
 } // namespace duckdb

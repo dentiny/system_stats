@@ -18,7 +18,7 @@ include_directories(src/include)
 set(EXTENSION_SOURCES
     src/cpu_stats.cpp
     src/cpu_stats_query_function.cpp
-    src/database_instance_storage.cpp
+    src/database_instance_cache.cpp
     src/disk_stats.cpp
     src/disk_stats_query_function.cpp
     src/memory_stats.cpp

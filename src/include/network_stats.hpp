@@ -5,6 +5,7 @@
 #include "duckdb/common/vector.hpp"
 
 namespace duckdb {
+class ClientContext;
 
 struct NetworkInfo {
 	std::string interface_name;
@@ -21,6 +22,6 @@ struct NetworkInfo {
 };
 
 // Get network information for the current platform
-vector<NetworkInfo> GetNetworkInfo();
+vector<NetworkInfo> GetNetworkInfo(ClientContext &context);
 
 } // namespace duckdb
