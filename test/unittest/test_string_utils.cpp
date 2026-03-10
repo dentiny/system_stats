@@ -1,5 +1,4 @@
-#define CATCH_CONFIG_RUNNER
-#include "catch.hpp"
+#include "catch/catch.hpp"
 #include "string_utils.hpp"
 
 using namespace duckdb;
@@ -70,8 +69,4 @@ TEST_CASE("RemoveQuotes - empty string", "[string_utils]") {
 TEST_CASE("RemoveQuotes - nested quotes", "[string_utils]") {
 	REQUIRE(RemoveQuotes("\"hello\\\"world\"") == "hello\\\"world");
 	REQUIRE(RemoveQuotes("\"test\"value\"") == "test\"value");
-}
-
-int main(int argc, char *argv[]) {
-	return Catch::Session().run(argc, argv);
 }
