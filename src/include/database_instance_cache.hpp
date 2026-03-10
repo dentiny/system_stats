@@ -22,6 +22,11 @@ public:
 	// Throws InternalException if the DatabaseInstance has been destroyed
 	shared_ptr<DatabaseInstance> GetDbInstance();
 
+	optional_idx GetEstimatedCacheMemory() const override {
+		// Cannot be evicted.
+		return optional_idx {};
+	}
+
 private:
 	weak_ptr<DatabaseInstance> db_weak;
 };
