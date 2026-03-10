@@ -28,6 +28,10 @@ void LoadInternal(ExtensionLoader &loader) {
 	RegisterSysDiskInfoFunction(loader);
 	RegisterSysNetworkInfoFunction(loader);
 	RegisterSysOSInfoFunction(loader);
+
+	// Set description for the extension
+	loader.SetDescription(
+	    "Provides system information functions including CPU, memory, disk, network, and OS statistics");
 }
 
 } // namespace
