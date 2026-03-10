@@ -41,7 +41,4 @@ install(
   ARCHIVE DESTINATION "${INSTALL_LIB_DIR}")
 
 # Test cases.
-include_directories(duckdb/third_party/catch)
-
-add_executable(test_string_utils unit/test_string_utils.cpp)
-target_link_libraries(test_string_utils ${EXTENSION_NAME})
+add_subdirectory(test/unittest)
