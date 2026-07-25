@@ -1,3 +1,9 @@
+# 0.10.0
+
+## Changed
+
+- Upgrade DuckDB and extension-ci to v1.5.5
+
 # 0.9.0
 
 ## Changed
