@@ -5,7 +5,6 @@
 
 namespace duckdb {
 
-// Register sys_network_info table function
-void RegisterSysNetworkInfoFunction(ExtensionLoader &loader);
+TableFunction GetSysNetworkInfoFunction();
 
 } // namespace duckdb

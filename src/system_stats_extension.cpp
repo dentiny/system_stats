@@ -2,20 +2,12 @@
 
 #include "system_stats_extension.hpp"
 
-#include "cpu_stats_query_function.hpp"
-#include "disk_stats_query_function.hpp"
-#include "memory_stats_query_function.hpp"
-#include "network_stats_query_function.hpp"
-#include "os_info_query_function.hpp"
+#include "system_stats_functions.hpp"
 
 namespace duckdb {
 
 static void LoadInternal(ExtensionLoader &loader) {
-	RegisterSysMemoryInfoFunction(loader);
-	RegisterSysCPUInfoFunction(loader);
-	RegisterSysDiskInfoFunction(loader);
-	RegisterSysNetworkInfoFunction(loader);
-	RegisterSysOSInfoFunction(loader);
+	RegisterSystemStatsFunctions(loader);
 	loader.SetDescription(
 	    "Provides system information functions including CPU, memory, disk, network, and OS statistics");
 }

@@ -100,9 +100,8 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 
 } // namespace
 
-void RegisterSysCPUInfoFunction(ExtensionLoader &loader) {
-	TableFunction sys_cpu_info_func("sys_cpu_info", {}, SysCPUInfoFunc, SysCPUInfoBind, SysCPUInfoInit);
-	loader.RegisterFunction(sys_cpu_info_func);
+TableFunction GetSysCPUInfoFunction() {
+	return TableFunction("sys_cpu_info", {}, SysCPUInfoFunc, SysCPUInfoBind, SysCPUInfoInit);
 }
 
 } // namespace duckdb

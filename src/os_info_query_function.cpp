@@ -96,9 +96,8 @@ void SysOSInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChunk
 
 } // namespace
 
-void RegisterSysOSInfoFunction(ExtensionLoader &loader) {
-	TableFunction sys_os_info_func("sys_os_info", {}, SysOSInfoFunc, SysOSInfoBind, SysOSInfoInit);
-	loader.RegisterFunction(sys_os_info_func);
+TableFunction GetSysOSInfoFunction() {
+	return TableFunction("sys_os_info", {}, SysOSInfoFunc, SysOSInfoBind, SysOSInfoInit);
 }
 
 } // namespace duckdb

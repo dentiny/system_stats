@@ -122,10 +122,10 @@ void SysDiskInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChu
 
 } // namespace
 
-void RegisterSysDiskInfoFunction(ExtensionLoader &loader) {
+TableFunction GetSysDiskInfoFunction() {
 	TableFunction sys_disk_info_func("sys_disk_info", {}, SysDiskInfoFunc, SysDiskInfoBind, SysDiskInfoInit);
 	sys_disk_info_func.named_parameters["unit"] = LogicalType::VARCHAR;
-	loader.RegisterFunction(sys_disk_info_func);
+	return sys_disk_info_func;
 }
 
 } // namespace duckdb

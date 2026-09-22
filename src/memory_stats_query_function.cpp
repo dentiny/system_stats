@@ -114,10 +114,10 @@ void SysMemoryInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataC
 
 } // namespace
 
-void RegisterSysMemoryInfoFunction(ExtensionLoader &loader) {
+TableFunction GetSysMemoryInfoFunction() {
 	TableFunction sys_memory_info_func("sys_memory_info", {}, SysMemoryInfoFunc, SysMemoryInfoBind, SysMemoryInfoInit);
 	sys_memory_info_func.named_parameters["unit"] = LogicalType::VARCHAR;
-	loader.RegisterFunction(sys_memory_info_func);
+	return sys_memory_info_func;
 }
 
 } // namespace duckdb

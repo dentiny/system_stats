@@ -128,11 +128,8 @@ void SysNetworkInfoFunc(ClientContext &context, TableFunctionInput &data_p, Data
 
 } // namespace
 
-// Register function (must be after anonymous namespace to reference anonymous functions)
-void RegisterSysNetworkInfoFunction(ExtensionLoader &loader) {
-	TableFunction sys_network_info_func("sys_network_info", {}, SysNetworkInfoFunc, SysNetworkInfoBind,
-	                                    SysNetworkInfoInit);
-	loader.RegisterFunction(sys_network_info_func);
+TableFunction GetSysNetworkInfoFunction() {
+	return TableFunction("sys_network_info", {}, SysNetworkInfoFunc, SysNetworkInfoBind, SysNetworkInfoInit);
 }
 
 } // namespace duckdb

@@ -1,0 +1,19 @@
+# name: test/sql/system_stats_metadata.test
+# description: test catalog metadata for system_stats table functions
+# group: [sql]
+
+require system_stats
+
+query I
+SELECT count(*)
+FROM duckdb_functions()
+WHERE function_name IN (
+    'sys_cpu_info',
+    'sys_disk_info',
+    'sys_memory_info',
+    'sys_network_info',
+    'sys_os_info'
+)
+AND description IS NOT NULL;
+----
+5
