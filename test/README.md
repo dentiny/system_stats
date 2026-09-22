@@ -1,11 +1,12 @@
 # Testing this extension
-This directory contains all the tests for this extension. The `sql` directory holds tests that are written as [SQLLogicTests](https://duckdb.org/dev/sqllogictest/intro.html). DuckDB aims to have most its tests in this format as SQL statements, so for the quack extension, this should probably be the goal too.
+The `sql` directory contains the extension's
+[SQLLogicTests](https://duckdb.org/dev/sqllogictest/intro.html).
 
-The root makefile contains targets to build and run all of these tests. To run the SQLLogicTests:
+Build DuckDB with the extension and run the tests with:
+
 ```bash
-make test
+CMAKE_BUILD_PARALLEL_LEVEL=14 make reldebug
+make test_reldebug
 ```
-or 
-```bash
-make test_debug
-```
+
+The test runner uses the extension statically linked into the DuckDB test binary.
