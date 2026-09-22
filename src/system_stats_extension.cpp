@@ -3,38 +3,22 @@
 #include "system_stats_extension.hpp"
 
 #include "cpu_stats_query_function.hpp"
-#include "database_instance_cache.hpp"
 #include "disk_stats_query_function.hpp"
-#include "duckdb.hpp"
-#include "duckdb/storage/object_cache.hpp"
 #include "memory_stats_query_function.hpp"
 #include "network_stats_query_function.hpp"
 #include "os_info_query_function.hpp"
 
 namespace duckdb {
 
-namespace {
-
-void LoadInternal(ExtensionLoader &loader) {
-	// Store DatabaseInstance in ObjectCache for per-database access
-	auto &db = loader.GetDatabaseInstance();
-	auto db_shared = db.shared_from_this();
-	auto &cache = db.GetObjectCache();
-	auto entry = make_shared_ptr<DatabaseInstanceCacheEntry>(db_shared);
-	cache.Put(DatabaseInstanceCacheEntry::ObjectType(), std::move(entry));
-
+static void LoadInternal(ExtensionLoader &loader) {
 	RegisterSysMemoryInfoFunction(loader);
 	RegisterSysCPUInfoFunction(loader);
 	RegisterSysDiskInfoFunction(loader);
 	RegisterSysNetworkInfoFunction(loader);
 	RegisterSysOSInfoFunction(loader);
-
-	// Set description for the extension
 	loader.SetDescription(
 	    "Provides system information functions including CPU, memory, disk, network, and OS statistics");
 }
-
-} // namespace
 
 void SystemStatsExtension::Load(ExtensionLoader &loader) {
 	LoadInternal(loader);

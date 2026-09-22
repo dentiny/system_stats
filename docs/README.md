@@ -1,15 +1,23 @@
 # System Statistics
-*system_stats* is a DuckDB extension that provides table functions to access system
-level statistics that can be used for monitoring. It supports Linux and macOS.
+*system_stats* is a DuckDB extension whose system-statistics implementation is
+written in Rust. A small C++ adapter links the Rust static library into DuckDB
+and registers the table functions. It supports Linux, macOS, Windows, and the
+additional targets supported by both DuckDB and `sysinfo`.
 
 ## Building and Installing
 
 ### Building
-The extension can be built using the standard DuckDB extension build process:
+Install Rust and Python 3, initialize the git submodules, and run:
 
 ```sh
-CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) make reldebug
+git submodule update --init --recursive
+CMAKE_BUILD_PARALLEL_LEVEL=14 make reldebug
+make test_reldebug
 ```
+
+This builds DuckDB with `system_stats` linked in. The CLI is written to
+`build/reldebug/duckdb`, and the loadable extension is written under
+`build/reldebug/extension/system_stats/`.
 
 ### Installing the Extension
 ```sql
@@ -115,7 +123,8 @@ This function returns network interface information and statistics.
 SELECT * FROM sys_network_info();
 ```
 
-**Note:** On macOS, `tx_dropped` and `link_speed_mbps` may return 0 as these values are not available through the system APIs.
+**Note:** `tx_dropped`, `rx_dropped`, and `link_speed_mbps` return 0 where the
+operating system does not expose a portable equivalent.
 
 ### sys_os_info()
 This function returns operating system information.
@@ -137,5 +146,8 @@ SELECT * FROM sys_os_info();
 
 ## Limitations
 
-- Cache sizes may not be available in containerized environments
-- Some fields may return NULL on certain platforms where the information is not available
+- CPU cache sizes and cached memory return 0 where no portable metric is available.
+- Thread counts are exact on Linux and are estimated from the process count on
+  platforms that do not expose per-process thread lists through `sysinfo`.
+- Some network fields return 0 where the operating system does not expose a
+  portable equivalent.

@@ -1,23 +1,16 @@
 PROJ_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
-# Configuration of extension
 EXT_NAME=system_stats
 EXT_CONFIG=${PROJ_DIR}extension_config.cmake
 
-# Include the Makefile from extension-ci-tools
+.DEFAULT_GOAL := reldebug
+
 include extension-ci-tools/makefiles/duckdb_extension.Makefile
 
+CMAKE_FILES := CMakeLists.txt extension_config.cmake
+
 format-all: format
-	@cmake-format -i CMakeLists.txt
-	find unit/ -iname *.hpp -o -iname *.cpp | xargs clang-format --sort-includes=0 -style=file -i
+	cmake-format -i $(CMAKE_FILES)
+	cargo fmt --all
 
-test_unit: all
-	find build/release/extension/cache_httpfs/ -type f -name "test*" -not -name "*.o" -not -name "*.cpp" -not -name "*.d" -exec {} \;
-
-test_reldebug_unit: reldebug
-	find build/reldebug/extension/cache_httpfs/ -type f -name "test*" -not -name "*.o" -not -name "*.cpp" -not -name "*.d" -exec {} \;
-
-test_debug_unit: debug
-	find build/debug/extension/cache_httpfs/ -type f -name "test*" -not -name "*.o" -not -name "*.cpp" -not -name "*.d" -exec {} \;
-
-PHONY: format-all test_unit test_reldebug_unit test_debug_unit
+.PHONY: format-all
