@@ -5,7 +5,6 @@
 
 namespace duckdb {
 
-// Register sys_cpu_info table function
-void RegisterSysCPUInfoFunction(ExtensionLoader &loader);
+TableFunction GetSysCPUInfoFunction();
 
 } // namespace duckdb

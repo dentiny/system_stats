@@ -4,7 +4,6 @@
 
 namespace duckdb {
 
-// Register sys_os_info table function
-void RegisterSysOSInfoFunction(ExtensionLoader &loader);
+TableFunction GetSysOSInfoFunction();
 
 } // namespace duckdb

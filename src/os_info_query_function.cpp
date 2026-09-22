@@ -4,7 +4,6 @@
 #include "duckdb/common/types/value.hpp"
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
-#include "function_metadata.hpp"
 #include "os_info.hpp"
 
 namespace duckdb {
@@ -97,12 +96,8 @@ void SysOSInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChunk
 
 } // namespace
 
-void RegisterSysOSInfoFunction(ExtensionLoader &loader) {
-	TableFunction sys_os_info_func("sys_os_info", {}, SysOSInfoFunc, SysOSInfoBind, SysOSInfoInit);
-	RegisterTableFunctionWithMetadata(
-	    loader, std::move(sys_os_info_func), {},
-	    "Returns operating system, host, process, handle, thread, architecture, and uptime information.",
-	    {"SELECT * FROM sys_os_info();"}, {"system", "operating_system"});
+TableFunction GetSysOSInfoFunction() {
+	return TableFunction("sys_os_info", {}, SysOSInfoFunc, SysOSInfoBind, SysOSInfoInit);
 }
 
 } // namespace duckdb

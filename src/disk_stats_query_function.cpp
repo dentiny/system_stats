@@ -4,7 +4,6 @@
 #include "duckdb/common/assert.hpp"
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
-#include "function_metadata.hpp"
 #include "memory_unit_util.hpp"
 
 namespace duckdb {
@@ -123,13 +122,10 @@ void SysDiskInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChu
 
 } // namespace
 
-void RegisterSysDiskInfoFunction(ExtensionLoader &loader) {
+TableFunction GetSysDiskInfoFunction() {
 	TableFunction sys_disk_info_func("sys_disk_info", {}, SysDiskInfoFunc, SysDiskInfoBind, SysDiskInfoInit);
 	sys_disk_info_func.named_parameters["unit"] = LogicalType::VARCHAR;
-	RegisterTableFunctionWithMetadata(
-	    loader, std::move(sys_disk_info_func), {"unit"},
-	    "Returns mounted filesystem capacity and usage, optionally converted to the requested unit.",
-	    {"SELECT * FROM sys_disk_info(unit = 'GiB');"}, {"system", "storage"});
+	return sys_disk_info_func;
 }
 
 } // namespace duckdb

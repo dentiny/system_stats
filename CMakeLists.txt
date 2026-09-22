@@ -23,6 +23,7 @@ set(EXTENSION_SOURCES
     src/network_stats_query_function.cpp
     src/os_info_query_function.cpp
     src/rust_stats.cpp
+    src/system_stats_functions.cpp
     src/system_stats_extension.cpp)
 
 # The system-statistics implementation is Rust; C++ only adapts its C ABI to
