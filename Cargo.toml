@@ -1,0 +1,15 @@
+[package]
+name = "system_stats"
+version = "1.0.0"
+edition = "2024"
+license = "MIT"
+
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+[profile.release]
+lto = true
+strip = true
+
+[dependencies]
+sysinfo = { version = "0.37", default-features = true }

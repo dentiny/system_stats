@@ -5,9 +5,6 @@
 
 namespace duckdb {
 
-// Forward declaration.
-class ClientContext;
-
 struct CPUInfo {
 	// Basic CPU info
 	string model_name;
@@ -28,6 +25,6 @@ struct CPUInfo {
 };
 
 // Get CPU information for the current platform
-CPUInfo GetCPUInfo(ClientContext &context);
+CPUInfo GetCPUInfo();
 
 } // namespace duckdb

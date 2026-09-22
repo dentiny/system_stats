@@ -1,3 +1,10 @@
+# 1.0.0
+
+## Changed
+
+- Rewrote the system-statistics implementation in Rust with a thin C++ DuckDB registration adapter.
+- Added Windows support while preserving the existing SQL interface.
+
 # 0.10.0
 
 ## Changed

@@ -6,9 +6,6 @@
 
 namespace duckdb {
 
-// Forward declaration.
-class ClientContext;
-
 struct DiskInfo {
 	string mount_point;
 	string file_system;
@@ -19,6 +16,6 @@ struct DiskInfo {
 };
 
 // Get disk information for the current platform
-vector<DiskInfo> GetDiskInfo(ClientContext &context);
+vector<DiskInfo> GetDiskInfo();
 
 } // namespace duckdb
