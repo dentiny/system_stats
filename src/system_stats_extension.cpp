@@ -32,7 +32,7 @@ string SystemStatsExtension::Version() const {
 #ifdef EXT_VERSION_SYSTEM_STATS
 	return EXT_VERSION_SYSTEM_STATS;
 #else
-	return "0.1.0";
+	return "1.0.0";
 #endif
 }
 
