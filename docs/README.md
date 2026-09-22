@@ -4,22 +4,7 @@ written in Rust. A small C++ adapter links the Rust static library into DuckDB
 and registers the table functions. It supports Linux, macOS, Windows, and the
 additional targets supported by both DuckDB and `sysinfo`.
 
-## Building and Installing
-
-### Building
-Install Rust and Python 3, initialize the git submodules, and run:
-
-```sh
-git submodule update --init --recursive
-CMAKE_BUILD_PARALLEL_LEVEL=14 make reldebug
-make test_reldebug
-```
-
-This builds DuckDB with `system_stats` linked in. The CLI is written to
-`build/reldebug/duckdb`, and the loadable extension is written under
-`build/reldebug/extension/system_stats/`.
-
-### Installing the Extension
+## Installing the Extension
 ```sql
 FORCE INSTALL system_stats FROM community;
 LOAD system_stats;
