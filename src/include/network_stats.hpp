@@ -6,9 +6,6 @@
 
 namespace duckdb {
 
-// Forward declaration.
-class ClientContext;
-
 struct NetworkInfo {
 	string interface_name;
 	string ipv4_address;
@@ -24,6 +21,6 @@ struct NetworkInfo {
 };
 
 // Get network information for the current platform
-vector<NetworkInfo> GetNetworkInfo(ClientContext &context);
+vector<NetworkInfo> GetNetworkInfo();
 
 } // namespace duckdb

@@ -63,7 +63,7 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 		return;
 	}
 
-	CPUInfo info = GetCPUInfo(context);
+	CPUInfo info = GetCPUInfo();
 
 	idx_t col_idx = 0;
 

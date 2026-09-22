@@ -15,8 +15,7 @@ string CopyString(const char *value) {
 
 } // namespace
 
-CPUInfo GetCPUInfo(ClientContext &context) {
-	(void)context;
+CPUInfo GetCPUInfo() {
 	CPUInfo result;
 	auto handle = system_stats_cpu_info();
 	if (!handle) {
@@ -38,8 +37,7 @@ CPUInfo GetCPUInfo(ClientContext &context) {
 	return result;
 }
 
-MemoryInfo GetMemoryInfo(ClientContext &context) {
-	(void)context;
+MemoryInfo GetMemoryInfo() {
 	auto info = system_stats_memory_info();
 	MemoryInfo result;
 	result.total_memory = info.total_memory;
@@ -52,8 +50,7 @@ MemoryInfo GetMemoryInfo(ClientContext &context) {
 	return result;
 }
 
-vector<DiskInfo> GetDiskInfo(ClientContext &context) {
-	(void)context;
+vector<DiskInfo> GetDiskInfo() {
 	vector<DiskInfo> result;
 	auto list = system_stats_disk_info();
 	if (!list) {
@@ -79,8 +76,7 @@ vector<DiskInfo> GetDiskInfo(ClientContext &context) {
 	return result;
 }
 
-vector<NetworkInfo> GetNetworkInfo(ClientContext &context) {
-	(void)context;
+vector<NetworkInfo> GetNetworkInfo() {
 	vector<NetworkInfo> result;
 	auto list = system_stats_network_info();
 	if (!list) {
@@ -111,8 +107,7 @@ vector<NetworkInfo> GetNetworkInfo(ClientContext &context) {
 	return result;
 }
 
-OSInfo GetOSInfo(ClientContext &context) {
-	(void)context;
+OSInfo GetOSInfo() {
 	OSInfo result;
 	auto handle = system_stats_os_info();
 	if (!handle) {

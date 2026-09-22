@@ -26,8 +26,8 @@ struct SysDiskInfoBindData : public FunctionData {
 };
 
 struct SysDiskInfoData : public GlobalTableFunctionState {
-	explicit SysDiskInfoData(ClientContext &context) : finished(false), current_index(0) {
-		disks = GetDiskInfo(context);
+	SysDiskInfoData() : finished(false), current_index(0) {
+		disks = GetDiskInfo();
 	}
 	bool finished;
 	size_t current_index;
@@ -71,7 +71,7 @@ unique_ptr<FunctionData> SysDiskInfoBind(ClientContext &context, TableFunctionBi
 }
 
 unique_ptr<GlobalTableFunctionState> SysDiskInfoInit(ClientContext &context, TableFunctionInitInput &input) {
-	return make_uniq<SysDiskInfoData>(context);
+	return make_uniq<SysDiskInfoData>();
 }
 
 void SysDiskInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChunk &output) {

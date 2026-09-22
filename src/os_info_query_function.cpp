@@ -11,8 +11,8 @@ namespace duckdb {
 namespace {
 
 struct SysOSInfoData : public GlobalTableFunctionState {
-	explicit SysOSInfoData(ClientContext &context) : finished(false) {
-		os_info = GetOSInfo(context);
+	SysOSInfoData() : finished(false) {
+		os_info = GetOSInfo();
 	}
 	bool finished;
 	OSInfo os_info;
@@ -53,7 +53,7 @@ unique_ptr<FunctionData> SysOSInfoBind(ClientContext &context, TableFunctionBind
 }
 
 unique_ptr<GlobalTableFunctionState> SysOSInfoInit(ClientContext &context, TableFunctionInitInput &input) {
-	return make_uniq<SysOSInfoData>(context);
+	return make_uniq<SysOSInfoData>();
 }
 
 void SysOSInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChunk &output) {
