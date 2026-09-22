@@ -5,8 +5,6 @@
 - Rewrote the system-statistics implementation in Rust with a thin C++ DuckDB
   registration adapter.
 - Added Windows support while preserving the existing SQL interface.
-- Integrated the Rust static library into DuckDB's standard CMake extension
-  build.
 
 # 0.10.0
 
