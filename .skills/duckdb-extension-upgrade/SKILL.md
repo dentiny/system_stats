@@ -5,7 +5,8 @@ description: Upgrade the system_stats extension to a new DuckDB release. Use whe
 
 # Upgrade system_stats to a new DuckDB release
 
-Three submodules must move together. Two are pinned to matching release tags, one tracks `main`. Then build, run two test suites, and write a changelog entry.
+The DuckDB and extension-ci-tools submodules must move together. Then build,
+run the Rust and SQL test suites, and write a changelog entry.
 
 ## Inputs
 
@@ -17,11 +18,11 @@ Track these as a checklist; do not skip ahead:
 
 - 1. Pin duckdb submodule to tags/$TARGET
 - 2. Pin extension-ci-tools submodule to $TARGET (same tag)
-- 3. Build: CMAKE_BUILD_PARALLEL_LEVEL=10 make reldebug
-- 4. Run test
-  + Extension C++ unit test: `./build/reldebug/extension/system_stats/test/unittest/unittest_system_stats`
-  + SQL test: `make test_reldebug` (expands to `./build/reldebug/test/unittest "test/*"`)
+- 3. Run Rust checks: `cargo test` and
+  `cargo clippy --all-targets -- -D warnings`
+- 4. Build: `CMAKE_BUILD_PARALLEL_LEVEL=10 make reldebug`
+- 5. Run SQL tests: `make test_reldebug`
 
 ## Reference: historical upgrade commits
 
-- `97359a4` — `Upgrade duckdb v1.5.2`. Minimal: 3 submodules + 1 CMake source line + CHANGELOG.
+- `97359a4` — `Upgrade duckdb v1.5.2`.
