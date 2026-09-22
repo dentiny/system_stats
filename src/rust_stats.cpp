@@ -9,6 +9,36 @@ namespace duckdb {
 
 namespace {
 
+template <class HANDLE, HANDLE *(*CREATE)(), void (*DESTROY)(HANDLE *)>
+class RustHandle {
+public:
+	RustHandle() : handle(CREATE()) {
+	}
+
+	~RustHandle() {
+		DESTROY(handle);
+	}
+
+	RustHandle(const RustHandle &) = delete;
+	RustHandle &operator=(const RustHandle &) = delete;
+
+	explicit operator bool() const {
+		return handle != nullptr;
+	}
+
+	HANDLE *Get() const {
+		return handle;
+	}
+
+private:
+	HANDLE *handle;
+};
+
+using CPUInfoHandle = RustHandle<RustCPUInfoHandle, system_stats_cpu_info, system_stats_cpu_info_free>;
+using DiskInfoHandle = RustHandle<RustDiskInfoList, system_stats_disk_info, system_stats_disk_info_free>;
+using NetworkInfoHandle = RustHandle<RustNetworkInfoList, system_stats_network_info, system_stats_network_info_free>;
+using OSInfoHandle = RustHandle<RustOSInfoHandle, system_stats_os_info, system_stats_os_info_free>;
+
 string CopyString(const char *value) {
 	return value ? string(value) : string();
 }
@@ -17,11 +47,11 @@ string CopyString(const char *value) {
 
 CPUInfo GetCPUInfo() {
 	CPUInfo result;
-	auto handle = system_stats_cpu_info();
+	CPUInfoHandle handle;
 	if (!handle) {
 		return result;
 	}
-	auto info = system_stats_cpu_info_get(handle);
+	auto info = system_stats_cpu_info_get(handle.Get());
 	if (info) {
 		result.model_name = CopyString(info->model_name);
 		result.architecture = CopyString(info->architecture);
@@ -33,7 +63,6 @@ CPUInfo GetCPUInfo() {
 		result.l3_cache_kb = info->l3_cache_kb;
 		result.byte_order = CopyString(info->byte_order);
 	}
-	system_stats_cpu_info_free(handle);
 	return result;
 }
 
@@ -52,14 +81,14 @@ MemoryInfo GetMemoryInfo() {
 
 vector<DiskInfo> GetDiskInfo() {
 	vector<DiskInfo> result;
-	auto list = system_stats_disk_info();
-	if (!list) {
+	DiskInfoHandle handle;
+	if (!handle) {
 		return result;
 	}
-	auto count = system_stats_disk_info_len(list);
+	auto count = system_stats_disk_info_len(handle.Get());
 	result.reserve(count);
 	for (size_t index = 0; index < count; index++) {
-		auto info = system_stats_disk_info_get(list, index);
+		auto info = system_stats_disk_info_get(handle.Get(), index);
 		if (!info) {
 			continue;
 		}
@@ -72,20 +101,19 @@ vector<DiskInfo> GetDiskInfo() {
 		disk.free_space = info->free_space;
 		result.emplace_back(std::move(disk));
 	}
-	system_stats_disk_info_free(list);
 	return result;
 }
 
 vector<NetworkInfo> GetNetworkInfo() {
 	vector<NetworkInfo> result;
-	auto list = system_stats_network_info();
-	if (!list) {
+	NetworkInfoHandle handle;
+	if (!handle) {
 		return result;
 	}
-	auto count = system_stats_network_info_len(list);
+	auto count = system_stats_network_info_len(handle.Get());
 	result.reserve(count);
 	for (size_t index = 0; index < count; index++) {
-		auto info = system_stats_network_info_get(list, index);
+		auto info = system_stats_network_info_get(handle.Get(), index);
 		if (!info) {
 			continue;
 		}
@@ -103,17 +131,16 @@ vector<NetworkInfo> GetNetworkInfo() {
 		network.speed_mbps = info->speed_mbps;
 		result.emplace_back(std::move(network));
 	}
-	system_stats_network_info_free(list);
 	return result;
 }
 
 OSInfo GetOSInfo() {
 	OSInfo result;
-	auto handle = system_stats_os_info();
+	OSInfoHandle handle;
 	if (!handle) {
 		return result;
 	}
-	auto info = system_stats_os_info_get(handle);
+	auto info = system_stats_os_info_get(handle.Get());
 	if (info) {
 		result.name = CopyString(info->name);
 		result.version = CopyString(info->version);
@@ -124,7 +151,6 @@ OSInfo GetOSInfo() {
 		result.architecture = CopyString(info->architecture);
 		result.os_up_since_seconds = info->uptime;
 	}
-	system_stats_os_info_free(handle);
 	return result;
 }
 
