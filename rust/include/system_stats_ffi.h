@@ -6,59 +6,59 @@
 extern "C" {
 
 struct RustCPUInfo {
-	const char *model_name;
-	const char *architecture;
-	int32_t logical_cpus;
-	int32_t physical_cpus;
-	int32_t l1d_cache_kb;
-	int32_t l1i_cache_kb;
-	int32_t l2_cache_kb;
-	int32_t l3_cache_kb;
-	const char *byte_order;
+	const char *model_name = nullptr;
+	const char *architecture = nullptr;
+	int32_t logical_cpus = 0;
+	int32_t physical_cpus = 0;
+	int32_t l1d_cache_kb = 0;
+	int32_t l1i_cache_kb = 0;
+	int32_t l2_cache_kb = 0;
+	int32_t l3_cache_kb = 0;
+	const char *byte_order = nullptr;
 };
 
 struct RustMemoryInfo {
-	uint64_t total_memory;
-	uint64_t used_memory;
-	uint64_t free_memory;
-	uint64_t total_swap;
-	uint64_t used_swap;
-	uint64_t free_swap;
-	uint64_t cached_memory;
+	uint64_t total_memory = 0;
+	uint64_t used_memory = 0;
+	uint64_t free_memory = 0;
+	uint64_t total_swap = 0;
+	uint64_t used_swap = 0;
+	uint64_t free_swap = 0;
+	uint64_t cached_memory = 0;
 };
 
 struct RustDiskInfo {
-	const char *mount_point;
-	const char *file_system;
-	const char *file_system_type;
-	uint64_t total_space;
-	uint64_t used_space;
-	uint64_t free_space;
+	const char *mount_point = nullptr;
+	const char *file_system = nullptr;
+	const char *file_system_type = nullptr;
+	uint64_t total_space = 0;
+	uint64_t used_space = 0;
+	uint64_t free_space = 0;
 };
 
 struct RustNetworkInfo {
-	const char *interface_name;
-	const char *ipv4_address;
-	uint64_t tx_bytes;
-	uint64_t tx_packets;
-	uint64_t tx_errors;
-	uint64_t tx_dropped;
-	uint64_t rx_bytes;
-	uint64_t rx_packets;
-	uint64_t rx_errors;
-	uint64_t rx_dropped;
-	uint64_t speed_mbps;
+	const char *interface_name = nullptr;
+	const char *ipv4_address = nullptr;
+	uint64_t tx_bytes = 0;
+	uint64_t tx_packets = 0;
+	uint64_t tx_errors = 0;
+	uint64_t tx_dropped = 0;
+	uint64_t rx_bytes = 0;
+	uint64_t rx_packets = 0;
+	uint64_t rx_errors = 0;
+	uint64_t rx_dropped = 0;
+	uint64_t speed_mbps = 0;
 };
 
 struct RustOSInfo {
-	const char *name;
-	const char *version;
-	const char *host_name;
-	int32_t handle_count;
-	int32_t process_count;
-	int32_t thread_count;
-	const char *architecture;
-	uint64_t uptime;
+	const char *name = nullptr;
+	const char *version = nullptr;
+	const char *host_name = nullptr;
+	int32_t handle_count = 0;
+	int32_t process_count = 0;
+	int32_t thread_count = 0;
+	const char *architecture = nullptr;
+	uint64_t uptime = 0;
 };
 
 struct RustCPUInfoHandle;
@@ -85,5 +85,4 @@ void system_stats_network_info_free(RustNetworkInfoList *list);
 RustOSInfoHandle *system_stats_os_info();
 const RustOSInfo *system_stats_os_info_get(const RustOSInfoHandle *handle);
 void system_stats_os_info_free(RustOSInfoHandle *handle);
-
 }
