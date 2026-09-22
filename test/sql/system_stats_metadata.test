@@ -1,0 +1,39 @@
+# name: test/sql/system_stats_metadata.test
+# description: test catalog metadata for system_stats table functions
+# group: [sql]
+
+require system_stats
+
+query I
+SELECT count(*) = 5
+   AND count(description) = 5
+   AND bool_and(description != '')
+   AND bool_and(len(examples) > 0)
+   AND bool_and(len(categories) > 0)
+FROM duckdb_functions()
+WHERE function_name IN (
+    'sys_cpu_info',
+    'sys_disk_info',
+    'sys_memory_info',
+    'sys_network_info',
+    'sys_os_info'
+);
+----
+true
+
+query TT rowsort
+SELECT function_name, coalesce(nullif(array_to_string(parameters, ','), ''), '<none>')
+FROM duckdb_functions()
+WHERE function_name IN (
+    'sys_cpu_info',
+    'sys_disk_info',
+    'sys_memory_info',
+    'sys_network_info',
+    'sys_os_info'
+);
+----
+sys_cpu_info	<none>
+sys_disk_info	unit
+sys_memory_info	unit
+sys_network_info	<none>
+sys_os_info	<none>

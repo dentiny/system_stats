@@ -1,5 +1,12 @@
 # 1.0.0
 
+## Added
+
+- Added descriptions, examples, parameter names, and categories for all table
+  functions in `duckdb_functions()` ([#30]).
+
+[#30]: https://github.com/dentiny/system_stats/issues/30
+
 ## Changed
 
 - Rewrote the system-statistics implementation in Rust with a thin C++ DuckDB registration adapter.

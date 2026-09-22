@@ -3,6 +3,7 @@
 #include "duckdb/common/assert.hpp"
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
+#include "function_metadata.hpp"
 #include "memory_stats.hpp"
 #include "memory_unit_util.hpp"
 
@@ -117,7 +118,10 @@ void SysMemoryInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataC
 void RegisterSysMemoryInfoFunction(ExtensionLoader &loader) {
 	TableFunction sys_memory_info_func("sys_memory_info", {}, SysMemoryInfoFunc, SysMemoryInfoBind, SysMemoryInfoInit);
 	sys_memory_info_func.named_parameters["unit"] = LogicalType::VARCHAR;
-	loader.RegisterFunction(sys_memory_info_func);
+	RegisterTableFunctionWithMetadata(
+	    loader, std::move(sys_memory_info_func), {"unit"},
+	    "Returns physical memory and swap usage for the host system, optionally converted to the requested unit.",
+	    {"SELECT * FROM sys_memory_info(unit = 'GiB');"}, {"system", "memory"});
 }
 
 } // namespace duckdb

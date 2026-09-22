@@ -5,6 +5,7 @@
 #include "duckdb/common/vector.hpp"
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
+#include "function_metadata.hpp"
 #include "network_stats.hpp"
 
 namespace duckdb {
@@ -132,7 +133,10 @@ void SysNetworkInfoFunc(ClientContext &context, TableFunctionInput &data_p, Data
 void RegisterSysNetworkInfoFunction(ExtensionLoader &loader) {
 	TableFunction sys_network_info_func("sys_network_info", {}, SysNetworkInfoFunc, SysNetworkInfoBind,
 	                                    SysNetworkInfoInit);
-	loader.RegisterFunction(sys_network_info_func);
+	RegisterTableFunctionWithMetadata(
+	    loader, std::move(sys_network_info_func), {},
+	    "Returns IPv4 addresses and traffic counters for the host system's network interfaces.",
+	    {"SELECT * FROM sys_network_info();"}, {"system", "network"});
 }
 
 } // namespace duckdb

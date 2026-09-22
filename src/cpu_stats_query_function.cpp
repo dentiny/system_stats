@@ -4,6 +4,7 @@
 #include "duckdb/common/assert.hpp"
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
+#include "function_metadata.hpp"
 
 namespace duckdb {
 
@@ -102,7 +103,10 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 
 void RegisterSysCPUInfoFunction(ExtensionLoader &loader) {
 	TableFunction sys_cpu_info_func("sys_cpu_info", {}, SysCPUInfoFunc, SysCPUInfoBind, SysCPUInfoInit);
-	loader.RegisterFunction(sys_cpu_info_func);
+	RegisterTableFunctionWithMetadata(
+	    loader, std::move(sys_cpu_info_func), {},
+	    "Returns processor identity, architecture, core counts, cache sizes, and byte order for the host system.",
+	    {"SELECT * FROM sys_cpu_info();"}, {"system", "cpu"});
 }
 
 } // namespace duckdb
