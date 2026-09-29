@@ -9,6 +9,8 @@
 
 ## Changed
 
+- Update DuckDB and extension-ci-tools to `v1.5.6`.
+
 - Rewrote the system-statistics implementation in Rust with a thin C++ DuckDB registration adapter.
 - Added Windows support while preserving the existing SQL interface.
 
