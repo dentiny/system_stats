@@ -1,6 +1,7 @@
 #include "network_stats_query_function.hpp"
 
 #include "duckdb/common/assert.hpp"
+#include "duckdb/common/identifier.hpp"
 #include "duckdb/common/types/value.hpp"
 #include "duckdb/common/vector.hpp"
 #include "duckdb/common/vector_size.hpp"
@@ -21,7 +22,7 @@ struct SysNetworkInfoData : public GlobalTableFunctionState {
 };
 
 unique_ptr<FunctionData> SysNetworkInfoBind(ClientContext &context, TableFunctionBindInput &input,
-                                            vector<LogicalType> &return_types, vector<string> &names) {
+                                            vector<LogicalType> &return_types, vector<Identifier> &names) {
 	D_ASSERT(return_types.empty());
 	D_ASSERT(names.empty());
 	return_types.reserve(11);
@@ -83,37 +84,37 @@ void SysNetworkInfoFunc(ClientContext &context, TableFunctionInput &data_p, Data
 		col_idx = 0;
 
 		// interface_name
-		output.SetValue(col_idx++, output_count, Value(info.interface_name));
+		output.data[col_idx++].Append(Value(info.interface_name));
 
 		// ip_address
-		output.SetValue(col_idx++, output_count, Value(info.ipv4_address));
+		output.data[col_idx++].Append(Value(info.ipv4_address));
 
 		// tx_bytes
-		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.tx_bytes));
+		output.data[col_idx++].Append(Value::UBIGINT(info.tx_bytes));
 
 		// tx_packets
-		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.tx_packets));
+		output.data[col_idx++].Append(Value::UBIGINT(info.tx_packets));
 
 		// tx_errors
-		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.tx_errors));
+		output.data[col_idx++].Append(Value::UBIGINT(info.tx_errors));
 
 		// tx_dropped
-		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.tx_dropped));
+		output.data[col_idx++].Append(Value::UBIGINT(info.tx_dropped));
 
 		// rx_bytes
-		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.rx_bytes));
+		output.data[col_idx++].Append(Value::UBIGINT(info.rx_bytes));
 
 		// rx_packets
-		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.rx_packets));
+		output.data[col_idx++].Append(Value::UBIGINT(info.rx_packets));
 
 		// rx_errors
-		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.rx_errors));
+		output.data[col_idx++].Append(Value::UBIGINT(info.rx_errors));
 
 		// rx_dropped
-		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.rx_dropped));
+		output.data[col_idx++].Append(Value::UBIGINT(info.rx_dropped));
 
 		// link_speed_mbps
-		output.SetValue(col_idx++, output_count, Value::UBIGINT(info.speed_mbps));
+		output.data[col_idx++].Append(Value::UBIGINT(info.speed_mbps));
 
 		data.current_index++;
 		output_count++;
@@ -123,7 +124,7 @@ void SysNetworkInfoFunc(ClientContext &context, TableFunctionInput &data_p, Data
 		data.finished = true;
 	}
 
-	output.SetCardinality(output_count);
+	output.CheckCardinality(output_count);
 }
 
 } // namespace

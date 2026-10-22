@@ -2,6 +2,7 @@
 
 #include "disk_stats.hpp"
 #include "duckdb/common/assert.hpp"
+#include "duckdb/common/identifier.hpp"
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "memory_unit_util.hpp"
@@ -21,7 +22,7 @@ struct SysDiskInfoBindData : public FunctionData {
 	unique_ptr<FunctionData> Copy() const override {
 		auto result = make_uniq<SysDiskInfoBindData>();
 		result->unit = unit;
-		return std::move(result);
+		return result;
 	}
 };
 
@@ -35,7 +36,7 @@ struct SysDiskInfoData : public GlobalTableFunctionState {
 };
 
 unique_ptr<FunctionData> SysDiskInfoBind(ClientContext &context, TableFunctionBindInput &input,
-                                         vector<LogicalType> &return_types, vector<string> &names) {
+                                         vector<LogicalType> &return_types, vector<Identifier> &names) {
 	D_ASSERT(return_types.empty());
 	D_ASSERT(names.empty());
 	return_types.reserve(6);
@@ -67,7 +68,7 @@ unique_ptr<FunctionData> SysDiskInfoBind(ClientContext &context, TableFunctionBi
 	names.emplace_back("free_space");
 	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
 
-	return std::move(result);
+	return result;
 }
 
 unique_ptr<GlobalTableFunctionState> SysDiskInfoInit(ClientContext &context, TableFunctionInitInput &input) {
@@ -91,23 +92,23 @@ void SysDiskInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChu
 		col_idx = 0;
 
 		// mount_point
-		output.SetValue(col_idx++, output_count, Value(info.mount_point));
+		output.data[col_idx++].Append(Value(info.mount_point));
 
 		// file_system
-		output.SetValue(col_idx++, output_count, Value(info.file_system));
+		output.data[col_idx++].Append(Value(info.file_system));
 
 		// file_system_type
-		output.SetValue(col_idx++, output_count, Value(info.file_system_type));
+		output.data[col_idx++].Append(Value(info.file_system_type));
 
 		// Apply unit conversion
 		// total_space
-		output.SetValue(col_idx++, output_count, Value::UBIGINT(ConvertBytes(info.total_space, bind_data.unit)));
+		output.data[col_idx++].Append(Value::UBIGINT(ConvertBytes(info.total_space, bind_data.unit)));
 
 		// used_space
-		output.SetValue(col_idx++, output_count, Value::UBIGINT(ConvertBytes(info.used_space, bind_data.unit)));
+		output.data[col_idx++].Append(Value::UBIGINT(ConvertBytes(info.used_space, bind_data.unit)));
 
 		// free_space
-		output.SetValue(col_idx++, output_count, Value::UBIGINT(ConvertBytes(info.free_space, bind_data.unit)));
+		output.data[col_idx++].Append(Value::UBIGINT(ConvertBytes(info.free_space, bind_data.unit)));
 
 		data.current_index++;
 		output_count++;
@@ -117,14 +118,14 @@ void SysDiskInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChu
 		data.finished = true;
 	}
 
-	output.SetCardinality(output_count);
+	output.CheckCardinality(output_count);
 }
 
 } // namespace
 
 TableFunction GetSysDiskInfoFunction() {
 	TableFunction sys_disk_info_func("sys_disk_info", {}, SysDiskInfoFunc, SysDiskInfoBind, SysDiskInfoInit);
-	sys_disk_info_func.named_parameters["unit"] = LogicalType::VARCHAR;
+	sys_disk_info_func.GetSignature().AddKeywordOnly("unit", LogicalType::VARCHAR, Value("bytes"));
 	return sys_disk_info_func;
 }
 

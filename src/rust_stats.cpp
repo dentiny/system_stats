@@ -4,40 +4,27 @@
 #include "network_stats.hpp"
 #include "os_info.hpp"
 #include "system_stats_ffi.h"
+#include <memory>
 
 namespace duckdb {
 
 namespace {
 
-template <class HANDLE, HANDLE *(*CREATE)(), void (*DESTROY)(HANDLE *)>
-class RustHandle {
-public:
-	RustHandle() : handle(CREATE()) {
-	}
-
-	~RustHandle() {
+template <auto DESTROY>
+struct RustHandleDeleter {
+	template <class HANDLE>
+	void operator()(HANDLE *handle) const {
 		DESTROY(handle);
 	}
-
-	RustHandle(const RustHandle &) = delete;
-	RustHandle &operator=(const RustHandle &) = delete;
-
-	explicit operator bool() const {
-		return handle != nullptr;
-	}
-
-	HANDLE *Get() const {
-		return handle;
-	}
-
-private:
-	HANDLE *handle;
 };
 
-using CPUInfoHandle = RustHandle<RustCPUInfoHandle, system_stats_cpu_info, system_stats_cpu_info_free>;
-using DiskInfoHandle = RustHandle<RustDiskInfoList, system_stats_disk_info, system_stats_disk_info_free>;
-using NetworkInfoHandle = RustHandle<RustNetworkInfoList, system_stats_network_info, system_stats_network_info_free>;
-using OSInfoHandle = RustHandle<RustOSInfoHandle, system_stats_os_info, system_stats_os_info_free>;
+template <class HANDLE, auto DESTROY>
+using RustHandle = std::unique_ptr<HANDLE, RustHandleDeleter<DESTROY>>;
+
+using CPUInfoHandle = RustHandle<RustCPUInfoHandle, system_stats_cpu_info_free>;
+using DiskInfoHandle = RustHandle<RustDiskInfoList, system_stats_disk_info_free>;
+using NetworkInfoHandle = RustHandle<RustNetworkInfoList, system_stats_network_info_free>;
+using OSInfoHandle = RustHandle<RustOSInfoHandle, system_stats_os_info_free>;
 
 string CopyString(const char *value) {
 	return value ? string(value) : string();
@@ -47,11 +34,11 @@ string CopyString(const char *value) {
 
 CPUInfo GetCPUInfo() {
 	CPUInfo result;
-	CPUInfoHandle handle;
+	CPUInfoHandle handle(system_stats_cpu_info());
 	if (!handle) {
 		return result;
 	}
-	auto info = system_stats_cpu_info_get(handle.Get());
+	auto info = system_stats_cpu_info_get(handle.get());
 	if (info) {
 		result.model_name = CopyString(info->model_name);
 		result.architecture = CopyString(info->architecture);
@@ -81,14 +68,14 @@ MemoryInfo GetMemoryInfo() {
 
 vector<DiskInfo> GetDiskInfo() {
 	vector<DiskInfo> result;
-	DiskInfoHandle handle;
+	DiskInfoHandle handle(system_stats_disk_info());
 	if (!handle) {
 		return result;
 	}
-	auto count = system_stats_disk_info_len(handle.Get());
+	auto count = system_stats_disk_info_len(handle.get());
 	result.reserve(count);
 	for (size_t index = 0; index < count; index++) {
-		auto info = system_stats_disk_info_get(handle.Get(), index);
+		auto info = system_stats_disk_info_get(handle.get(), index);
 		if (!info) {
 			continue;
 		}
@@ -106,14 +93,14 @@ vector<DiskInfo> GetDiskInfo() {
 
 vector<NetworkInfo> GetNetworkInfo() {
 	vector<NetworkInfo> result;
-	NetworkInfoHandle handle;
+	NetworkInfoHandle handle(system_stats_network_info());
 	if (!handle) {
 		return result;
 	}
-	auto count = system_stats_network_info_len(handle.Get());
+	auto count = system_stats_network_info_len(handle.get());
 	result.reserve(count);
 	for (size_t index = 0; index < count; index++) {
-		auto info = system_stats_network_info_get(handle.Get(), index);
+		auto info = system_stats_network_info_get(handle.get(), index);
 		if (!info) {
 			continue;
 		}
@@ -136,11 +123,11 @@ vector<NetworkInfo> GetNetworkInfo() {
 
 OSInfo GetOSInfo() {
 	OSInfo result;
-	OSInfoHandle handle;
+	OSInfoHandle handle(system_stats_os_info());
 	if (!handle) {
 		return result;
 	}
-	auto info = system_stats_os_info_get(handle.Get());
+	auto info = system_stats_os_info_get(handle.get());
 	if (info) {
 		result.name = CopyString(info->name);
 		result.version = CopyString(info->version);

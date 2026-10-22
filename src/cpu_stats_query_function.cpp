@@ -2,6 +2,7 @@
 
 #include "cpu_stats.hpp"
 #include "duckdb/common/assert.hpp"
+#include "duckdb/common/identifier.hpp"
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
 
@@ -16,7 +17,7 @@ struct SysCPUInfoData : public GlobalTableFunctionState {
 };
 
 unique_ptr<FunctionData> SysCPUInfoBind(ClientContext &context, TableFunctionBindInput &input,
-                                        vector<LogicalType> &return_types, vector<string> &names) {
+                                        vector<LogicalType> &return_types, vector<Identifier> &names) {
 	D_ASSERT(return_types.empty());
 	D_ASSERT(names.empty());
 	return_types.reserve(9);
@@ -68,33 +69,33 @@ void SysCPUInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChun
 	idx_t col_idx = 0;
 
 	// model_name
-	output.SetValue(col_idx++, 0, Value(info.model_name));
+	output.data[col_idx++].Append(Value(info.model_name));
 
 	// architecture
-	output.SetValue(col_idx++, 0, Value(info.architecture));
+	output.data[col_idx++].Append(Value(info.architecture));
 
 	// logical_processor
-	output.SetValue(col_idx++, 0, Value::INTEGER(info.logical_cpus));
+	output.data[col_idx++].Append(Value::INTEGER(info.logical_cpus));
 
 	// physical_processor
-	output.SetValue(col_idx++, 0, Value::INTEGER(info.physical_cpus));
+	output.data[col_idx++].Append(Value::INTEGER(info.physical_cpus));
 
 	// l1dcache_size_KiB
-	output.SetValue(col_idx++, 0, Value::INTEGER(info.l1d_cache_kb));
+	output.data[col_idx++].Append(Value::INTEGER(info.l1d_cache_kb));
 
 	// l1icache_size_KiB
-	output.SetValue(col_idx++, 0, Value::INTEGER(info.l1i_cache_kb));
+	output.data[col_idx++].Append(Value::INTEGER(info.l1i_cache_kb));
 
 	// l2cache_size_KiB
-	output.SetValue(col_idx++, 0, Value::INTEGER(info.l2_cache_kb));
+	output.data[col_idx++].Append(Value::INTEGER(info.l2_cache_kb));
 
 	// l3cache_size_KiB
-	output.SetValue(col_idx++, 0, Value::INTEGER(info.l3_cache_kb));
+	output.data[col_idx++].Append(Value::INTEGER(info.l3_cache_kb));
 
 	// cpu_byte_order
-	output.SetValue(col_idx++, 0, Value(info.byte_order));
+	output.data[col_idx++].Append(Value(info.byte_order));
 
-	output.SetCardinality(1);
+	output.CheckCardinality(1);
 	data.finished = true;
 }
 
