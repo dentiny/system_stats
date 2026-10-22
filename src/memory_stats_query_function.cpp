@@ -1,6 +1,7 @@
 #include "memory_stats_query_function.hpp"
 
 #include "duckdb/common/assert.hpp"
+#include "duckdb/common/identifier.hpp"
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "memory_stats.hpp"
@@ -21,7 +22,7 @@ struct SysMemoryInfoBindData : public FunctionData {
 	unique_ptr<FunctionData> Copy() const override {
 		auto result = make_uniq<SysMemoryInfoBindData>();
 		result->unit = unit;
-		return std::move(result);
+		return result;
 	}
 };
 
@@ -32,7 +33,7 @@ struct SysMemoryInfoData : public GlobalTableFunctionState {
 };
 
 unique_ptr<FunctionData> SysMemoryInfoBind(ClientContext &context, TableFunctionBindInput &input,
-                                           vector<LogicalType> &return_types, vector<string> &names) {
+                                           vector<LogicalType> &return_types, vector<Identifier> &names) {
 	D_ASSERT(return_types.empty());
 	D_ASSERT(names.empty());
 	return_types.reserve(7);
@@ -67,7 +68,7 @@ unique_ptr<FunctionData> SysMemoryInfoBind(ClientContext &context, TableFunction
 	names.emplace_back("free_swap");
 	return_types.emplace_back(LogicalType {LogicalTypeId::UBIGINT});
 
-	return std::move(result);
+	return result;
 }
 
 unique_ptr<GlobalTableFunctionState> SysMemoryInfoInit(ClientContext &context, TableFunctionInitInput &input) {
@@ -88,27 +89,27 @@ void SysMemoryInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataC
 
 	// Apply unit conversion
 	// total_memory
-	output.SetValue(col_idx++, 0, Value::UBIGINT(ConvertBytes(info.total_memory, bind_data.unit)));
+	output.data[col_idx++].Append(Value::UBIGINT(ConvertBytes(info.total_memory, bind_data.unit)));
 
 	// used_memory
-	output.SetValue(col_idx++, 0, Value::UBIGINT(ConvertBytes(info.used_memory, bind_data.unit)));
+	output.data[col_idx++].Append(Value::UBIGINT(ConvertBytes(info.used_memory, bind_data.unit)));
 
 	// free_memory
-	output.SetValue(col_idx++, 0, Value::UBIGINT(ConvertBytes(info.free_memory, bind_data.unit)));
+	output.data[col_idx++].Append(Value::UBIGINT(ConvertBytes(info.free_memory, bind_data.unit)));
 
 	// cached_memory
-	output.SetValue(col_idx++, 0, Value::UBIGINT(ConvertBytes(info.cached_memory, bind_data.unit)));
+	output.data[col_idx++].Append(Value::UBIGINT(ConvertBytes(info.cached_memory, bind_data.unit)));
 
 	// total_swap
-	output.SetValue(col_idx++, 0, Value::UBIGINT(ConvertBytes(info.total_swap, bind_data.unit)));
+	output.data[col_idx++].Append(Value::UBIGINT(ConvertBytes(info.total_swap, bind_data.unit)));
 
 	// used_swap
-	output.SetValue(col_idx++, 0, Value::UBIGINT(ConvertBytes(info.used_swap, bind_data.unit)));
+	output.data[col_idx++].Append(Value::UBIGINT(ConvertBytes(info.used_swap, bind_data.unit)));
 
 	// free_swap
-	output.SetValue(col_idx++, 0, Value::UBIGINT(ConvertBytes(info.free_swap, bind_data.unit)));
+	output.data[col_idx++].Append(Value::UBIGINT(ConvertBytes(info.free_swap, bind_data.unit)));
 
-	output.SetCardinality(1);
+	output.CheckCardinality(1);
 	data.finished = true;
 }
 
@@ -116,7 +117,7 @@ void SysMemoryInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataC
 
 TableFunction GetSysMemoryInfoFunction() {
 	TableFunction sys_memory_info_func("sys_memory_info", {}, SysMemoryInfoFunc, SysMemoryInfoBind, SysMemoryInfoInit);
-	sys_memory_info_func.named_parameters["unit"] = LogicalType::VARCHAR;
+	sys_memory_info_func.GetSignature().AddKeywordOnly("unit", LogicalType::VARCHAR, Value("bytes"));
 	return sys_memory_info_func;
 }
 

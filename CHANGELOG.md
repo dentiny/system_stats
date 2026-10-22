@@ -1,3 +1,14 @@
+# 1.1.0
+
+## Changed
+
+- Upgrade DuckDB to `v2.0.0` and extension-ci-tools to the latest main commit.
+- Use DuckDB identifiers and function signatures for table-function names and optional arguments.
+- Write result columns with the native vector append API to avoid deprecated chunk methods.
+- Use C++17 as the minimum C++ standard.
+- Replace the custom Rust handle owner with standard smart pointers and remove redundant return moves.
+- Enable the Rust toolchain explicitly in both CI workflows and match the registry's WebAssembly exclusions.
+
 # 1.0.0
 
 ## Added

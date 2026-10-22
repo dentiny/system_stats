@@ -1,6 +1,7 @@
 #include "os_info_query_function.hpp"
 
 #include "duckdb/common/assert.hpp"
+#include "duckdb/common/identifier.hpp"
 #include "duckdb/common/types/value.hpp"
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
@@ -19,7 +20,7 @@ struct SysOSInfoData : public GlobalTableFunctionState {
 };
 
 unique_ptr<FunctionData> SysOSInfoBind(ClientContext &context, TableFunctionBindInput &input,
-                                       vector<LogicalType> &return_types, vector<string> &names) {
+                                       vector<LogicalType> &return_types, vector<Identifier> &names) {
 	D_ASSERT(return_types.empty());
 	D_ASSERT(names.empty());
 	return_types.reserve(8);
@@ -67,30 +68,30 @@ void SysOSInfoFunc(ClientContext &context, TableFunctionInput &data_p, DataChunk
 	idx_t col_idx = 0;
 
 	// name
-	output.SetValue(col_idx++, 0, Value(info.name));
+	output.data[col_idx++].Append(Value(info.name));
 
 	// version
-	output.SetValue(col_idx++, 0, Value(info.version));
+	output.data[col_idx++].Append(Value(info.version));
 
 	// host_name
-	output.SetValue(col_idx++, 0, Value(info.host_name));
+	output.data[col_idx++].Append(Value(info.host_name));
 
 	// handle_count
-	output.SetValue(col_idx++, 0, Value::INTEGER(info.handle_count));
+	output.data[col_idx++].Append(Value::INTEGER(info.handle_count));
 
 	// process_count
-	output.SetValue(col_idx++, 0, Value::INTEGER(info.process_count));
+	output.data[col_idx++].Append(Value::INTEGER(info.process_count));
 
 	// thread_count
-	output.SetValue(col_idx++, 0, Value::INTEGER(info.thread_count));
+	output.data[col_idx++].Append(Value::INTEGER(info.thread_count));
 
 	// architecture
-	output.SetValue(col_idx++, 0, Value(info.architecture));
+	output.data[col_idx++].Append(Value(info.architecture));
 
 	// os_up_since_seconds
-	output.SetValue(col_idx++, 0, Value::UBIGINT(info.os_up_since_seconds));
+	output.data[col_idx++].Append(Value::UBIGINT(info.os_up_since_seconds));
 
-	output.SetCardinality(1);
+	output.CheckCardinality(1);
 	data.finished = true;
 }
 
