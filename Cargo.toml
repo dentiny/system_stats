@@ -12,4 +12,4 @@ lto = true
 strip = true
 
 [dependencies]
-sysinfo = { version = "0.37", default-features = true }
+sysinfo = { version = "0.39", default-features = true }
