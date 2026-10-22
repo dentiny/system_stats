@@ -10,6 +10,7 @@ namespace duckdb {
 
 namespace {
 
+// Releases Rust-owned handles through their matching C ABI destructor.
 template <auto DESTROY>
 struct RustHandleDeleter {
 	template <class HANDLE>
