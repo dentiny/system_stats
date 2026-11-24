@@ -1,3 +1,9 @@
+## 1.1.1 - 2026-11-23
+
+### Changed
+
+- Upgrade DuckDB to `v2.0.1`.
+
 # 1.1.0
 
 ## Changed
